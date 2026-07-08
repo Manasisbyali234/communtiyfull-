@@ -5,6 +5,14 @@ import { useAuthStore } from '../store/authStore';
 
 let socket: Socket | null = null;
 let initPromise: Promise<Socket | null> | null = null;
+type SocketReadyListener = (s: Socket) => void;
+const readyListeners: Set<SocketReadyListener> = new Set();
+
+export const onSocketReady = (cb: SocketReadyListener): (() => void) => {
+  if (socket?.connected) { cb(socket); return () => {}; }
+  readyListeners.add(cb);
+  return () => readyListeners.delete(cb);
+};
 
 const getValidToken = (): string | null => {
   return useAuthStore.getState().token ?? null;
@@ -31,24 +39,25 @@ const _initSocket = async () => {
     timeout: 5000,
   });
 
-  socket.on('connect', () => console.log('Connected to socket server'));
+  socket.on('connect', () => {
+    console.log('Connected to socket server');
+    readyListeners.forEach(cb => cb(socket!));
+    readyListeners.clear();
+  });
   socket.on('disconnect', (reason) => {
     console.log('Disconnected from socket server:', reason);
   });
 
   socket.on('connect_error', (err) => {
     if (err.message === 'Unauthorized') {
-      // Don't refresh here — the HTTP interceptor handles token refresh.
-      // Just update the auth token for the next reconnect attempt.
       const newToken = useAuthStore.getState().token;
       if (newToken) {
         socket!.auth = { token: newToken };
       } else {
         disconnectSocket();
       }
-    } else {
-      console.error('Socket connection error:', err.message);
     }
+    // 'xhr poll error' / transport errors are transient — socket will auto-retry
   });
 
   return socket;

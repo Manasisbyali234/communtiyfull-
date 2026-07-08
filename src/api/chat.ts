@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Message, Notification, PaginatedResponse, ApiResponse, Conversation } from '../types';
 import { useEffect } from 'react';
-import { getSocket } from './socket';
+import { getSocket, onSocketReady } from './socket';
 import { useAuthStore } from '../store/authStore';
 
 export const chatKeys = {
@@ -49,17 +49,37 @@ export function useSendMessageMutation() {
   const queryClient = useQueryClient();
   return useMutation<Message, Error, { chatId: string; content: string }>({
     mutationFn: async ({ chatId, content }) => {
-      console.log('[sendMessage] API payload:', { chatId, content });
       const res = await apiClient.post<ApiResponse<Message>>(`/messages/conversations/${chatId}`, { content });
-      console.log('[sendMessage] API response:', JSON.stringify(res.data));
       return res.data.data;
     },
-    onSuccess: (data, variables) => {
-      // The socket (chat:message) already updates the messages cache in real-time.
-      // Only invalidate the conversation list so the preview/timestamp updates.
-      // Re-fetching messages here would cause duplicates because the socket already
-      // inserted the message into the cache.
+    onMutate: async ({ chatId, content }) => {
+      await queryClient.cancelQueries({ queryKey: chatKeys.messages(chatId) });
+      const optimistic: Message = {
+        id: `optimistic-${Date.now()}`,
+        conversationId: chatId,
+        content,
+        createdAt: new Date().toISOString(),
+        senderId: useAuthStore.getState().user?.id ?? '',
+      } as any;
+      queryClient.setQueryData<Message[]>(chatKeys.messages(chatId), (old) =>
+        old ? [optimistic, ...old] : [optimistic]
+      );
+      return { optimisticId: optimistic.id, chatId };
+    },
+    onSuccess: (data, { chatId }, context: any) => {
+      // Replace optimistic message with real one (socket may have already inserted it)
+      queryClient.setQueryData<Message[]>(chatKeys.messages(chatId), (old) => {
+        if (!old) return [data];
+        const withoutOptimistic = old.filter(m => m.id !== context?.optimisticId);
+        if (withoutOptimistic.some(m => m.id === data.id)) return withoutOptimistic;
+        return [data, ...withoutOptimistic];
+      });
       queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+    },
+    onError: (_err, { chatId }, context: any) => {
+      queryClient.setQueryData<Message[]>(chatKeys.messages(chatId), (old) =>
+        old ? old.filter(m => m.id !== context?.optimisticId) : old
+      );
     },
   });
 }
@@ -142,47 +162,41 @@ export function useChatSocket(conversationId?: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
     const handleNewMessage = (payload: any) => {
-      // Backend emits { message } (nested), normalise to a flat Message
       const message: Message = payload?.message ?? payload;
 
-      console.log('[socket chat:message] received payload:', JSON.stringify(payload));
-      console.log('[socket chat:message] normalised message:', JSON.stringify(message));
-
-      // If we are listening to a specific conversation, update its cache
       if (conversationId && message.conversationId === conversationId) {
         queryClient.setQueryData<Message[]>(chatKeys.messages(conversationId), (old) => {
           if (!old) return [message];
-          // Check for duplicates
           if (old.some(m => m.id === message.id)) return old;
-          // Cache is stored newest-first (desc), new message goes at the front
           return [message, ...old];
         });
       }
 
-      // Also update the conversation list to bump the lastMessage
       queryClient.setQueryData<Conversation[]>(chatKeys.list(), (old) => {
         if (!old) return old;
         return old.map(conv => {
           if (conv.id === message.conversationId) {
-            return {
-              ...conv,
-              lastMessage: message,
-              lastMessageAt: message.createdAt,
-            };
+            return { ...conv, lastMessage: message, lastMessageAt: message.createdAt };
           }
           return conv;
         }).sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
       });
     };
 
-    socket.on('chat:message', handleNewMessage);
+    // Subscribe immediately if socket is already connected, otherwise wait
+    const subscribe = (s: ReturnType<typeof getSocket>) => {
+      if (!s) return;
+      s.off('chat:message', handleNewMessage);
+      s.on('chat:message', handleNewMessage);
+    };
+
+    subscribe(getSocket());
+    const unsub = onSocketReady(subscribe);
 
     return () => {
-      socket.off('chat:message', handleNewMessage);
+      unsub();
+      getSocket()?.off('chat:message', handleNewMessage);
     };
   }, [conversationId, queryClient]);
 }

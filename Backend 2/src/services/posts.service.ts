@@ -6,6 +6,7 @@ import { getQueue, QUEUE_NAMES } from '../config/bullmq';
 import { notificationsService } from './notifications.service';
 export const POST_SELECT = {
   id: true, content: true, mediaUrls: true, mediaType: true,
+  videoUrl: true, videoFileName: true, mimeType: true, fileSize: true,
   likesCount: true, commentsCount: true, sharesCount: true,
   isDraft: true, scheduledAt: true,
   createdAt: true, updatedAt: true,
@@ -95,9 +96,15 @@ export const postsService = {
   async createPost(authorId: string, data: {
     content: string;
     mediaUrls?: string[];
+    mediaType?: string;
+    videoUrl?: string;
+    videoFileName?: string;
+    mimeType?: string;
+    fileSize?: number;
     communityId?: string;
     isDraft?: boolean;
     scheduledAt?: Date | null;
+    tags?: string[];
   }) {
     if (data.communityId) {
       const member = await prisma.communityMember.findUnique({
@@ -106,8 +113,14 @@ export const postsService = {
       if (!member) throw ApiError.forbidden('You must be a member of this community to post');
     }
 
+    const { tags: _tags, mediaType, ...postData } = data;
     const post = await prisma.post.create({
-      data: { authorId, ...data },
+      data: {
+        authorId,
+        ...postData,
+        content: postData.content ?? '',
+        ...(mediaType ? { mediaType: mediaType as any } : {}),
+      },
       select: POST_SELECT,
     });
 

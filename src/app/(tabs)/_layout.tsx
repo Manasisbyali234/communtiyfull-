@@ -148,8 +148,15 @@ export default function TabsLayout() {
         <Tabs.Screen name="community/[id]" options={{ href: null }} />
         <Tabs.Screen name="community/[id]/members" options={{ href: null }} />
         <Tabs.Screen name="post/[id]" options={{ href: null }} />
+        <Tabs.Screen name="media-gallery" options={{ href: null }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />
         <Tabs.Screen name="settings" options={{ href: null }} />
+        <Tabs.Screen name="settings/appearance" options={{ href: null }} />
+        <Tabs.Screen name="settings/privacy" options={{ href: null }} />
+        <Tabs.Screen name="settings/notifications" options={{ href: null }} />
+        <Tabs.Screen name="settings/privacy-policy" options={{ href: null }} />
+        <Tabs.Screen name="settings/terms" options={{ href: null }} />
+        <Tabs.Screen name="settings/account" options={{ href: null }} />
         <Tabs.Screen name="edit-profile" options={{ href: null }} />
       </Tabs>
 

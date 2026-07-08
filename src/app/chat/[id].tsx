@@ -173,6 +173,7 @@ export default function ChatScreen() {
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const prevMessageCount = useRef(0);
+  const isAtBottomRef = useRef(true);
 
   const EMOJIS = ['😀','😂','😍','🥰','😎','😭','😅','🤔','😊','🙏','👍','❤️','🔥','🎉','😢','😡','🤣','😇','🥳','😴','👏','💪','🤝','✨','💯','🙌','😏','🤗','😬','🫡'];
 
@@ -305,9 +306,14 @@ export default function ChatScreen() {
   }, [id, queryClient]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      const isNewMessage = messages.length > prevMessageCount.current;
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: isNewMessage }), 100);
+    if (messages.length > 0 && messages.length > prevMessageCount.current) {
+      if (isAtBottomRef.current) {
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      }
+      prevMessageCount.current = messages.length;
+    } else if (messages.length > 0 && prevMessageCount.current === 0) {
+      // Initial load — scroll to bottom without animation
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
       prevMessageCount.current = messages.length;
     }
   }, [messages.length]);
@@ -335,7 +341,7 @@ export default function ChatScreen() {
           try {
             const msgs = rawMessages as any[];
             await Promise.all(msgs.map((m) => apiClient.delete(`/messages/messages/${m.id}/me`)));
-            router.back();
+            router.canGoBack() ? router.back() : router.replace('/chat');
           } catch { Alert.alert('Error', 'Failed to clear chat. Please try again.'); }
         },
       },
@@ -353,7 +359,7 @@ export default function ChatScreen() {
           try {
             await apiClient.post(`/users/${participantId}/block`);
             Alert.alert('Blocked', `${participantName} has been blocked.`);
-            router.back();
+            router.canGoBack() ? router.back() : router.replace('/chat');
           } catch { Alert.alert('Error', 'Failed to block user. Please try again.'); }
         },
       },
@@ -426,7 +432,7 @@ export default function ChatScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/chat')} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="arrow-back" size={22} color={WA.iconColor} />
         </TouchableOpacity>
         <View style={styles.headerAvatar}>
@@ -483,6 +489,11 @@ export default function ChatScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 8 }]}
             showsVerticalScrollIndicator={false}
             style={styles.messageList}
+            onScroll={(e) => {
+              const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+              isAtBottomRef.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 40;
+            }}
+            scrollEventThrottle={100}
           />
         )}
 

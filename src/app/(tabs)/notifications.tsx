@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
-import { useNotificationsQuery, useMarkAllReadMutation, useMarkReadMutation, useNotificationSocket } from '../../api/chat';
+import { useNotificationsQuery, useMarkAllReadMutation, useNotificationSocket } from '../../api/chat';
 import { useAcceptConnectionMutation, useRejectConnectionMutation } from '../../api/connections';
 import Avatar from '../../components/common/Avatar';
 import Skeleton from '../../components/feedback/Skeleton';
@@ -38,47 +38,16 @@ const formatTime = (createdAt: string) => {
 };
 
 export default function NotificationsScreen() {
+  const router = useRouter();
   const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const showToast = useToastStore((s) => s.showToast);
 
   const { data: notifications = [], isLoading } = useNotificationsQuery();
   const markAllRead = useMarkAllReadMutation();
-  const markRead = useMarkReadMutation();
   const acceptConn = useAcceptConnectionMutation();
   const rejectConn = useRejectConnectionMutation();
   useNotificationSocket();
-
-  const handlePress = (item: any) => {
-    if (!item.isRead) markRead.mutate(item.id);
-    switch (item.type) {
-      case 'LIKE':
-      case 'COMMENT':
-      case 'MENTION':
-      case 'POST_SHARE':
-        router.push('/(tabs)' as any);
-        break;
-      case 'STORY_LIKE':
-      case 'STORY_REPLY':
-        router.push('/(tabs)' as any);
-        break;
-      case 'FOLLOW':
-      case 'CONNECTION_ACCEPTED':
-        if (item.actor?.username) router.push(`/(tabs)/user/${item.actor.username}` as any);
-        break;
-      case 'COMMUNITY_JOIN':
-      case 'COMMUNITY_INVITE':
-        if (item.entityId) router.push(`/(tabs)/community/${item.entityId}` as any);
-        break;
-      case 'EVENT_REMINDER':
-        router.push('/(tabs)/communities' as any);
-        break;
-      case 'MESSAGE':
-        router.push('/chat' as any);
-        break;
-    }
-  };
 
   const renderIcon = (type: string) => {
     const cfg = ICON_MAP[type] ?? ICON_MAP['COMMUNITY_JOIN'];
@@ -92,9 +61,7 @@ export default function NotificationsScreen() {
   const renderItem = ({ item }: { item: any }) => {
     const isConnRequest = item.type === 'CONNECTION_REQUEST';
     return (
-      <TouchableOpacity
-        onPress={() => handlePress(item)}
-        activeOpacity={isConnRequest ? 1 : 0.8}
+      <View
         style={[
           styles.row,
           {
@@ -150,14 +117,14 @@ export default function NotificationsScreen() {
         {!item.isRead && !isConnRequest && (
           <View style={[styles.dot, { backgroundColor: colors.primary }]} />
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.navbar, { borderBottomColor: colors.borderSecondary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.navBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: colors.text, fontSize: typography.sizes.lg }]}>

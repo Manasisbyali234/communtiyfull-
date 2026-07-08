@@ -57,6 +57,7 @@ function normalizePost(p: any): Post {
     mediaUrls: absUrls,
     mediaUrl: toAbs(p.mediaUrl) ?? toAbs(absUrls[0]) ?? undefined,
     images: absUrls.length > 1 ? absUrls : (p.images?.map((u: string) => toAbs(u) ?? u) ?? undefined),
+    videoUrl: toAbs(p.videoUrl) ?? p.videoUrl ?? undefined,
     tags: p.tags ?? p.hashtags?.map((h: any) => h.hashtag?.name ?? h.name) ?? [],
     isLiked: p.isLiked ?? (p.likes?.length > 0),
     isBookmarked: p.isBookmarked ?? (p.bookmarks?.length > 0),
@@ -146,13 +147,18 @@ export function useSavedPostsQuery() {
 // Create a post
 export function useCreatePostMutation() {
   const queryClient = useQueryClient();
-  return useMutation<Post, Error, { content: string; communityId?: string; mediaType?: string; mediaUrl?: string; tags?: string[] }>({
+  return useMutation<Post, Error, { content: string; communityId?: string; mediaType?: string; mediaUrl?: string; videoUrl?: string; videoFileName?: string; mimeType?: string; fileSize?: number; tags?: string[] }>({
     mutationFn: async (newPost) => {
       const res = await apiClient.post<ApiResponse<Post>>('/posts', {
-        content: newPost.content,
+        content: newPost.content || '',
         communityId: newPost.communityId || undefined,
         mediaUrls: newPost.mediaUrl ? [newPost.mediaUrl] : undefined,
         mediaType: newPost.mediaType,
+        videoUrl: newPost.videoUrl || undefined,
+        videoFileName: newPost.videoFileName || undefined,
+        mimeType: newPost.mimeType || undefined,
+        fileSize: newPost.fileSize || undefined,
+        tags: newPost.tags,
       });
       return res.data.data;
     },

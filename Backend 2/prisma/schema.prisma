@@ -276,6 +276,10 @@ model Post {
   content       String
   mediaUrls     String[]
   mediaType     MediaType?
+  videoUrl      String?
+  videoFileName String?
+  mimeType      String?
+  fileSize      Int?
   likesCount    Int        @default(0)
   commentsCount Int        @default(0)
   sharesCount   Int        @default(0)
@@ -405,9 +409,10 @@ model Community {
   bannerUrl   String?
   category    String
   isPrivate   Boolean  @default(false)
-  memberCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  memberCount       Int      @default(0)
+  feedPostPrompts   String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   members CommunityMember[]
   rules   CommunityRule[]

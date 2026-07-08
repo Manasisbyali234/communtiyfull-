@@ -1,12 +1,13 @@
-import React from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
-import { useChatsQuery } from '../../api/chat';
+import { useChatsQuery, useStartConversationMutation } from '../../api/chat';
 import Avatar from '../../components/common/Avatar';
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation } from '../../types';
+import { useSearchUsersQuery } from '../../api/user';
 
 export default function ChatListScreen() {
   const { colors, spacing, typography, palette } = useTheme();
@@ -14,6 +15,19 @@ export default function ChatListScreen() {
   const router = useRouter();
 
   const { data: chats = [], isLoading } = useChatsQuery();
+  const [searchText, setSearchText] = useState('');
+  const startConversation = useStartConversationMutation();
+
+  const isSearching = searchText.trim().length > 0;
+
+  const filteredChats = chats.filter((c: Conversation) => {
+    if (!isSearching) return true;
+    const q = searchText.toLowerCase();
+    const name = (c.participant?.displayName || c.participant?.username || '').toLowerCase();
+    return name.includes(q);
+  });
+
+  const { data: searchedUsers = [] } = useSearchUsersQuery(isSearching ? searchText.trim() : '');
 
   const renderChatItem = ({ item }: { item: Conversation }) => {
     const isUnread = (item.unreadCount || 0) > 0;
@@ -74,7 +88,7 @@ export default function ChatListScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { borderBottomColor: colors.borderSecondary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text, fontSize: typography.sizes.lg }]}>
@@ -83,6 +97,25 @@ export default function ChatListScreen() {
         <TouchableOpacity style={styles.newChatBtn} onPress={() => router.push('/chat/new')}>
           <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.inputBg, borderRadius: 10 }]}>
+          <Ionicons name="search" size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            placeholder="Search by name or @username..."
+            placeholderTextColor={colors.textMuted}
+            value={searchText}
+            onChangeText={setSearchText}
+            style={[styles.searchInput, { color: colors.text, fontSize: typography.sizes.sm }]}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {isLoading ? (
@@ -96,9 +129,46 @@ export default function ChatListScreen() {
             No messages yet.
           </Text>
         </View>
+      ) : isSearching && filteredChats.length === 0 ? (
+        <FlatList
+          data={searchedUsers}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.chatItem, { borderBottomColor: colors.borderSecondary }]}
+              activeOpacity={0.7}
+              disabled={startConversation.isPending}
+              onPress={() =>
+                startConversation.mutate({ participantId: item.id }, {
+                  onSuccess: (conv) => router.push(`/chat/${conv.id}`),
+                })
+              }
+            >
+              <Avatar url={item.avatarUrl || ''} name={item.displayName || item.username} size={50} />
+              <View style={styles.chatInfo}>
+                <Text style={[styles.displayName, { color: colors.text, fontSize: typography.sizes.md }]}>
+                  {item.displayName || item.username}
+                </Text>
+                <Text style={[{ color: colors.textSecondary, fontSize: typography.sizes.xs }]}>
+                  @{item.username}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="person-outline" size={48} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary, fontSize: typography.sizes.sm }]}>
+                No users found.
+              </Text>
+            </View>
+          }
+        />
       ) : (
         <FlatList
-          data={chats}
+          data={filteredChats}
           renderItem={renderChatItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -144,6 +214,21 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 12,
     fontWeight: '500',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    padding: 0,
   },
   listContent: {
     paddingBottom: 20,

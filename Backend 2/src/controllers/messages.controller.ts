@@ -3,6 +3,8 @@ import { messagesService } from '../services/messages.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { MediaType } from '@prisma/client';
+import { getIO } from '../sockets';
+import { prisma } from '../config/database';
 
 export const messagesController = {
   getConversations: asyncHandler(async (req: Request, res: Response) => {
@@ -24,8 +26,29 @@ export const messagesController = {
 
   sendMessage: asyncHandler(async (req: Request, res: Response) => {
     const { content, mediaUrl, mediaType } = req.body as { content?: string; mediaUrl?: string; mediaType?: MediaType };
-    const message = await messagesService.sendMessage(req.params['id'], req.user.id, { content, mediaUrl, mediaType });
+    const conversationId = req.params['id'];
+    const message = await messagesService.sendMessage(conversationId, req.user.id, { content, mediaUrl, mediaType });
     res.status(201).json(new ApiResponse(201, message, 'Message sent'));
+
+    // Emit real-time event to all participants in the conversation room
+    try {
+      getIO().to(`conv:${conversationId}`).emit('chat:message', { message });
+
+      // Notify other participants
+      const participants = await prisma.conversationParticipant.findMany({
+        where: { conversationId, userId: { not: req.user.id } },
+        select: { userId: true },
+      });
+      for (const p of participants) {
+        getIO().to(`user:${p.userId}`).emit('notification:new', {
+          type: 'MESSAGE',
+          actorId: req.user.id,
+          entityId: conversationId,
+        });
+      }
+    } catch (_) {
+      // Socket not critical — message already saved
+    }
   }),
 
   markRead: asyncHandler(async (req: Request, res: Response) => {

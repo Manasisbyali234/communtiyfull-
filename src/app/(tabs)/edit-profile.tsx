@@ -141,7 +141,7 @@ export default function EditProfile() {
       if (coverImage !== undefined) updated.coverImage = coverImage;
       updateProfile(updated);
       showToast('Profile updated successfully!', 'success');
-      router.back();
+      router.canGoBack() ? router.back() : router.replace('/(tabs)/profile');
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || 'Failed to update profile. Try again.';
       showToast(msg, 'error');
@@ -162,7 +162,7 @@ export default function EditProfile() {
       >
         {/* Navbar */}
         <View style={styles.navbar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.navTitle, { color: colors.text, fontSize: typography.sizes.lg }]}>

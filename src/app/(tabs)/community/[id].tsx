@@ -176,21 +176,37 @@ export default function CommunityDetails() {
             </View>
           </View>
         ) : (
-          <FlashList
-            data={posts}
-            renderItem={({ item }: { item: any }) => <PostCard post={item} onCommentPress={handleCommentPress} />}
-            estimatedItemSize={400}
-            ListHeaderComponent={renderHeader}
-            contentContainerStyle={{ paddingBottom: 40 }}
-            showsVerticalScrollIndicator={false}
-          />
+        <FlashList
+          data={posts}
+          renderItem={({ item }: { item: any }) => <PostCard post={item} onCommentPress={handleCommentPress} />}
+          estimatedItemSize={400}
+          ListHeaderComponent={() => (
+            <>
+              {renderHeader()}
+              {community.feedPostPrompts && community.feedPostPrompts.length > 0 && (
+                <View style={{ paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 4 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Feed Post Prompts</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {community.feedPostPrompts.map((prompt: string, idx: number) => (
+                      <View key={idx} style={{ backgroundColor: colors.inputBg, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: colors.border }}>
+                        <Text style={{ color: colors.text, fontSize: typography.sizes.sm }}>{prompt}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </>
+          )}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        />
         )
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {renderHeader()}
           <View style={[styles.rulesContainer, { paddingHorizontal: spacing.lg }]}>
             {(!community.rules || community.rules.length === 0) && (
-              <Text style={[styles.ruleText, { color: colors.textMuted, fontSize: typography.sizes.sm }]}>No rules added yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: typography.sizes.sm, fontWeight: '500' }}>No rules added yet.</Text>
             )}
             {community.rules?.map((rule: any, idx: number) => {
               const title = typeof rule === 'string' ? rule : rule.title;

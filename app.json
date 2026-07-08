@@ -18,7 +18,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mmdevteam.communityapp"
+      "package": "com.mmdevteam.communityapp",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "androidStatusBar": {
       "translucent": true,
@@ -42,7 +46,13 @@
       ],
       "expo-video",
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to tag posts."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -51,9 +61,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "887ca828-7249-455d-985e-16555a37dfdc"
+        "projectId": "e1bea675-b761-46c6-92c2-6a6d39636021"
       }
     },
-    "owner": "mm-dev-team"
+    "owner": "mansi56"
   }
 }

@@ -1,217 +1,222 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Switch, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useThemeStore } from '../../theme';
 import { useAuthStore } from '../../store/authStore';
-import { useToastStore } from '../../store/toastStore';
-import { Ionicons } from '@expo/vector-icons';
+
+type RowItem =
+  | { type: 'nav'; icon: string; iconBg: string; iconColor: string; label: string; sub?: string; route: string }
+  | { type: 'divider' };
 
 export default function SettingsScreen() {
-  const { colors, spacing, typography, roundness } = useTheme();
+  const { colors: C, typography: T, roundness } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { themeMode } = useThemeStore();
+  const user = useAuthStore((s) => s.user);
 
-  const logout = useAuthStore((state) => state.logout);
-  const showToast = useToastStore((state) => state.showToast);
-
-  const { themeMode, setThemeMode } = useThemeStore();
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [emailEnabled, setEmailEnabled] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    showToast('Logged out successfully.', 'info');
-    // Guard will automatically pick this up and redirect to auth Stack
-  };
-
-  const handleThemeChange = (mode: 'light' | 'dark') => {
-    setThemeMode(mode);
-    showToast(`Switched to ${mode === 'dark' ? 'Dark' : 'Light'} Mode`, 'success');
-  };
+  const sections: { title: string; rows: RowItem[] }[] = [
+    {
+      title: 'ACCOUNT',
+      rows: [
+        {
+          type: 'nav',
+          icon: 'person-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Edit Profile',
+          sub: user?.displayName ?? '',
+          route: '/(tabs)/edit-profile',
+        },
+      ],
+    },
+    {
+      title: 'PREFERENCES',
+      rows: [
+        {
+          type: 'nav',
+          icon: themeMode === 'dark' ? 'moon-outline' : 'sunny-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Appearance',
+          sub: themeMode === 'dark' ? 'Dark Mode' : 'Light Mode',
+          route: '/(tabs)/settings/appearance',
+        },
+      ],
+    },
+    {
+      title: 'PRIVACY & NOTIFICATIONS',
+      rows: [
+        {
+          type: 'nav',
+          icon: 'lock-closed-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Account & Privacy',
+          sub: 'Private account, who can message',
+          route: '/(tabs)/settings/privacy',
+        },
+        {
+          type: 'nav',
+          icon: 'notifications-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Notifications',
+          sub: 'Likes, comments, follows & more',
+          route: '/(tabs)/settings/notifications',
+        },
+      ],
+    },
+    {
+      title: 'SUPPORT & LEGAL',
+      rows: [
+        {
+          type: 'nav',
+          icon: 'shield-checkmark-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Privacy Policy',
+          route: '/(tabs)/settings/privacy-policy',
+        },
+        {
+          type: 'nav',
+          icon: 'document-text-outline',
+          iconBg: C.primaryContainer,
+          iconColor: C.primary,
+          label: 'Terms of Service',
+          route: '/(tabs)/settings/terms',
+        },
+      ],
+    },
+    {
+      title: 'ACCOUNT ACTIONS',
+      rows: [
+        {
+          type: 'nav',
+          icon: 'log-out-outline',
+          iconBg: C.errorContainer,
+          iconColor: C.error,
+          label: 'Sign Out',
+          route: '/(tabs)/settings/account',
+        },
+      ],
+    },
+  ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Top Navbar */}
-      <View style={[styles.navbar, { borderBottomColor: colors.borderSecondary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+    <View style={[styles.container, { backgroundColor: C.background, paddingTop: insets.top }]}>
+      {/* Navbar */}
+      <View style={[styles.navbar, { borderBottomColor: C.borderSecondary }]}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/settings')} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text, fontSize: typography.sizes.lg }]}>
-          Settings
-        </Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.navTitle, { color: C.text, fontSize: T.sizes.lg }]}>Settings</Text>
+        <View style={{ width: 30 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Theme Settings Group */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.sizes.xs }]}>
-          THEME MODE
-        </Text>
-        <View style={[styles.sectionCard, { backgroundColor: colors.cardBg, borderColor: colors.border, borderRadius: roundness.md }]}>
-          <View style={styles.itemRow}>
-            <Ionicons
-              name={themeMode === 'dark' ? 'moon-outline' : 'sunny-outline'}
-              size={20}
-              color={colors.text}
-              style={styles.itemIcon}
-            />
-            <Text style={[styles.itemText, { color: colors.text, fontSize: typography.sizes.md }]}>
-              Dark Theme Mode
-            </Text>
-            <Switch
-              value={themeMode === 'dark'}
-              onValueChange={(value) => handleThemeChange(value ? 'dark' : 'light')}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
-
-        {/* Notifications mock Group */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.sizes.xs }]}>
-          NOTIFICATIONS
-        </Text>
-        <View style={[styles.sectionCard, { backgroundColor: colors.cardBg, borderColor: colors.border, borderRadius: roundness.md }]}>
-          <View style={[styles.itemRow, { borderBottomColor: colors.borderSecondary }]}>
-            <Ionicons name="notifications-outline" size={20} color={colors.text} style={styles.itemIcon} />
-            <Text style={[styles.itemText, { color: colors.text, fontSize: typography.sizes.md }]}>
-              Push Notifications
-            </Text>
-            <Switch
-              value={pushEnabled}
-              onValueChange={setPushEnabled}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.itemRow}>
-            <Ionicons name="mail-outline" size={20} color={colors.text} style={styles.itemIcon} />
-            <Text style={[styles.itemText, { color: colors.text, fontSize: typography.sizes.md }]}>
-              Email Updates
-            </Text>
-            <Switch
-              value={emailEnabled}
-              onValueChange={setEmailEnabled}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
-
-        {/* Help & About mock Group */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary, fontSize: typography.sizes.xs }]}>
-          ABOUT
-        </Text>
-        <View style={[styles.sectionCard, { backgroundColor: colors.cardBg, borderColor: colors.border, borderRadius: roundness.md }]}>
-          <TouchableOpacity style={[styles.itemRow, { borderBottomColor: colors.borderSecondary }]}>
-            <Ionicons name="shield-outline" size={20} color={colors.text} style={styles.itemIcon} />
-            <Text style={[styles.itemText, { color: colors.text, fontSize: typography.sizes.md }]}>
-              Privacy & Security
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Profile strip */}
+        {user && (
+          <TouchableOpacity
+            style={[styles.profileStrip, { backgroundColor: C.cardBg, borderColor: C.border, borderRadius: roundness.lg }]}
+            onPress={() => router.push('/(tabs)/edit-profile' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.avatarCircle, { backgroundColor: C.primaryContainer }]}>
+              <Ionicons name="person" size={28} color={C.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.profileName, { color: C.text, fontSize: T.sizes.md }]}>{user.displayName}</Text>
+              <Text style={[styles.profileSub, { color: C.textMuted, fontSize: T.sizes.xs }]}>@{user.username} · Tap to edit</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
           </TouchableOpacity>
+        )}
 
-          <TouchableOpacity style={styles.itemRow}>
-            <Ionicons name="document-text-outline" size={20} color={colors.text} style={styles.itemIcon} />
-            <Text style={[styles.itemText, { color: colors.text, fontSize: typography.sizes.md }]}>
-              Terms of Service
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+        {sections.map((section) => (
+          <View key={section.title}>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontSize: T.sizes.xs }]}>{section.title}</Text>
+            <View style={[styles.card, { backgroundColor: C.cardBg, borderColor: C.border, borderRadius: roundness.md }]}>
+              {section.rows.map((row, i) => {
+                if (row.type === 'divider') return <View key={i} style={[styles.divider, { backgroundColor: C.borderSecondary }]} />;
+                const isLast = i === section.rows.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={row.route}
+                    style={[styles.row, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.borderSecondary }]}
+                    onPress={() => router.push(row.route as any)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.iconBox, { backgroundColor: row.iconBg }]}>
+                      <Ionicons name={row.icon as any} size={18} color={row.iconColor} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.rowLabel, { color: row.iconColor === C.error ? C.error : C.text, fontSize: T.sizes.md }]}>
+                        {row.label}
+                      </Text>
+                      {row.sub ? (
+                        <Text style={[styles.rowSub, { color: C.textMuted, fontSize: T.sizes.xs }]}>{row.sub}</Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ))}
 
-        {/* Logout button */}
-        <TouchableOpacity
-          onPress={handleLogout}
-          activeOpacity={0.85}
-          style={[
-            styles.logoutBtn,
-            {
-              backgroundColor: colors.cardBg,
-              borderColor: colors.border,
-              borderRadius: roundness.md,
-            },
-          ]}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.error} style={styles.itemIcon} />
-          <Text style={[styles.logoutText, { color: colors.error, fontSize: typography.sizes.md }]}>
-            Sign Out
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={[styles.appVersion, { color: colors.textMuted, fontSize: typography.sizes.xs }]}>
-          Version 1.0.0 (Expo SDK 56)
-        </Text>
+        <Text style={[styles.version, { color: C.textMuted, fontSize: T.sizes.xs }]}>Version 1.0.0</Text>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   navbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backBtn: {
-    padding: 4,
+  backBtn: { padding: 4 },
+  navTitle: { fontWeight: '700' },
+  scroll: { paddingHorizontal: 16, paddingBottom: 48 },
+  profileStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginTop: 16,
+    marginBottom: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 12,
   },
-  navTitle: {
-    fontWeight: '700',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
+  avatarCircle: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  profileName: { fontWeight: '700' },
+  profileSub: { marginTop: 2 },
   sectionLabel: {
     fontWeight: '700',
-    marginTop: 20,
+    marginTop: 22,
     marginBottom: 8,
     marginLeft: 4,
     letterSpacing: 0.8,
   },
-  sectionCard: {
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  itemRow: {
+  card: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
+    gap: 12,
   },
-  itemIcon: {
-    marginRight: 12,
-  },
-  itemText: {
-    flex: 1,
-    fontWeight: '500',
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    marginTop: 30,
-    justifyContent: 'center',
-  },
-  logoutText: {
-    fontWeight: '700',
-  },
-  appVersion: {
-    textAlign: 'center',
-    marginTop: 30,
-    fontWeight: '500',
-  },
+  iconBox: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  rowLabel: { fontWeight: '600' },
+  rowSub: { marginTop: 2 },
+  divider: { height: StyleSheet.hairlineWidth },
+  version: { textAlign: 'center', marginTop: 32, fontWeight: '500' },
 });

@@ -48,6 +48,15 @@ export const mediaController = {
     res.json(new ApiResponse(200, result, 'Post image uploaded successfully'));
   }),
 
+  uploadPostVideo: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw ApiError.badRequest('No file provided');
+    const result = await mediaService.uploadPostVideo(
+      { buffer: req.file.buffer, originalname: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size },
+      req.user.id
+    );
+    res.json(new ApiResponse(200, result, 'Post video uploaded successfully'));
+  }),
+
   uploadChatFile: asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) throw ApiError.badRequest('No file provided');
     const result = await mediaService.uploadChatFile(

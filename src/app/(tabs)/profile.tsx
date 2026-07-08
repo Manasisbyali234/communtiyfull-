@@ -295,7 +295,7 @@ export default function ProfileScreen() {
       {/* ── Animated App Bar ────────────────────────────────────────────── */}
       <Animated.View style={[styles.navbar, { borderBottomColor: BORDER }]}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: SURF, opacity: navBgOpacity }]} />
-        <TouchableOpacity onPress={() => router.back()} style={styles.navIconBtn}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.navIconBtn}>
           <Ionicons name="arrow-back" size={24} color={TEXT} />
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: TEXT }]}>{user?.displayName || 'Profile'}</Text>
@@ -417,6 +417,12 @@ export default function ProfileScreen() {
             onPress={handleConnect}
           >
             <Ionicons name={isConnected ? "person-remove-outline" : "person-add-outline"} size={18} color={isConnected ? G : TEXT} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btnSecondary, { backgroundColor: SURF, borderColor: BORDER }]}
+            onPress={() => router.push('/(tabs)/media-gallery' as any)}
+          >
+            <Ionicons name="images-outline" size={18} color={TEXT} />
           </TouchableOpacity>
         </View>
 

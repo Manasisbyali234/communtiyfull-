@@ -31,7 +31,7 @@ export const communitiesService = {
     };
   },
 
-  async create(creatorId: string, data: { name: string; description?: string; category: string; isPrivate?: boolean; avatarUrl?: string; bannerUrl?: string }) {
+  async create(creatorId: string, data: { name: string; description?: string; category: string; isPrivate?: boolean; avatarUrl?: string; bannerUrl?: string; feedPostPrompts?: string[] }) {
     let slug = slugify(data.name);
     const existing = await prisma.community.findUnique({ where: { slug } });
     if (existing) slug = slugifyWithSuffix(data.name, Date.now().toString(36));
@@ -59,7 +59,7 @@ export const communitiesService = {
       orderBy: { order: 'asc' },
     });
 
-    return { ...community, isJoined: !!membership && membership.status === CommunityMemberStatus.ACTIVE, memberRole: membership?.role ?? null, memberStatus: membership?.status ?? null, rules };
+    return { ...community, isJoined: !!membership && membership.status === CommunityMemberStatus.ACTIVE, memberRole: membership?.role ?? null, memberStatus: membership?.status ?? null, rules, feedPostPrompts: community.feedPostPrompts ?? [] };
   },
 
   async update(communityId: string, userId: string, data: Partial<{ name: string; description: string; avatarUrl: string; bannerUrl: string; category: string; isPrivate: boolean }>) {

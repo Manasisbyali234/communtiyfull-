@@ -50,7 +50,7 @@ export default function CommunityMembers() {
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Top Navbar */}
       <View style={[styles.navbar, { borderBottomColor: colors.borderSecondary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: colors.text, fontSize: typography.sizes.lg }]}>

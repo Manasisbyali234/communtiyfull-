@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,10 @@ import {
   Platform,
   Switch,
   Image,
+  Modal,
+  Pressable,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,6 +48,208 @@ function InputField({ label, value, onChangeText, placeholder, multiline = false
   );
 }
 
+// ── Web date/time inputs – native HTML input styled to match the design ───────
+const webInputBaseStyle = (colors: any): React.CSSProperties => ({
+  display: 'block',
+  height: 48,
+  borderRadius: 12,
+  border: `1px solid ${colors.border}`,
+  backgroundColor: colors.inputBg,
+  paddingLeft: 12,
+  paddingRight: 12,
+  fontSize: 15,
+  color: colors.text,
+  width: '100%',
+  boxSizing: 'border-box' as const,
+  cursor: 'pointer',
+  outline: 'none',
+  fontFamily: 'inherit',
+  colorScheme: 'light' as any,
+});
+
+function WebDateInput({ value, onChange, colors }: { value: string; onChange: (iso: string) => void; colors: any }) {
+  const ref = useRef<any>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const open = () => { try { el.showPicker(); } catch {} };
+    el.addEventListener('click', open);
+    el.addEventListener('focus', open);
+    return () => { el.removeEventListener('click', open); el.removeEventListener('focus', open); };
+  }, []);
+  return (
+    // @ts-ignore – web-only
+    <input
+      ref={ref}
+      type="date"
+      value={value}
+      onChange={(e: any) => onChange(e.target.value)}
+      aria-label="Event date"
+      style={webInputBaseStyle(colors) as any}
+    />
+  );
+}
+
+function WebTimeInput({ value, onChange, colors }: { value: string; onChange: (t: string) => void; colors: any }) {
+  const ref = useRef<any>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const open = () => { try { el.showPicker(); } catch {} };
+    el.addEventListener('click', open);
+    el.addEventListener('focus', open);
+    return () => { el.removeEventListener('click', open); el.removeEventListener('focus', open); };
+  }, []);
+  return (
+    // @ts-ignore – web-only
+    <input
+      ref={ref}
+      type="time"
+      value={value}
+      step={300}
+      onChange={(e: any) => onChange(e.target.value)}
+      aria-label="Event time"
+      style={webInputBaseStyle(colors) as any}
+    />
+  );
+}
+
+// ── Mobile date/time picker (iOS modal + Android inline) ─────────────────────
+function MobileDateInput({ value, onChange, colors }: { value: string; onChange: (iso: string) => void; colors: any }) {
+  const [show, setShow] = useState(false);
+  const dateObj = value ? new Date(value) : new Date();
+  const display = value ? value.split('-').reverse().join('/') : '';
+
+  const onConfirm = (_: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (selected) {
+      const iso = selected.toISOString().split('T')[0];
+      onChange(iso);
+    }
+  };
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+        activeOpacity={0.8}
+        onPress={() => setShow(true)}
+        accessibilityLabel="Select date"
+        accessibilityRole="button"
+      >
+        <Ionicons name="calendar-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+        <Text style={[styles.input, { color: value ? colors.text : colors.textMuted, lineHeight: 48 }]}>
+          {display || 'DD/MM/YYYY'}
+        </Text>
+      </TouchableOpacity>
+
+      {Platform.OS === 'ios' && show && (
+        <Modal transparent animationType="slide">
+          <Pressable style={styles.modalOverlay} onPress={() => setShow(false)} />
+          <View style={[styles.iosPickerSheet, { backgroundColor: colors.surface ?? '#fff' }]}>
+            <View style={styles.iosPickerHeader}>
+              <TouchableOpacity onPress={() => setShow(false)}>
+                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={dateObj}
+              mode="date"
+              display="inline"
+              onChange={onConfirm}
+              style={{ width: '100%' }}
+            />
+          </View>
+        </Modal>
+      )}
+
+      {Platform.OS === 'android' && show && (
+        <DateTimePicker
+          value={dateObj}
+          mode="date"
+          display="calendar"
+          onChange={onConfirm}
+        />
+      )}
+    </>
+  );
+}
+
+function MobileTimeInput({ value, onChange, colors }: { value: string; onChange: (t: string) => void; colors: any }) {
+  const [show, setShow] = useState(false);
+  const toDate = (t: string) => {
+    const d = new Date();
+    if (t) { const [h, m] = t.split(':'); d.setHours(+h, +m, 0, 0); }
+    return d;
+  };
+  const display = (() => {
+    if (!value) return 'HH:MM AM/PM';
+    const [h, m] = value.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+  })();
+
+  const onConfirm = (_: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (selected) {
+      const hh = String(selected.getHours()).padStart(2, '0');
+      const mm = String(selected.getMinutes()).padStart(2, '0');
+      onChange(`${hh}:${mm}`);
+    }
+  };
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+        activeOpacity={0.8}
+        onPress={() => setShow(true)}
+        accessibilityLabel="Select time"
+        accessibilityRole="button"
+      >
+        <Ionicons name="time-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+        <Text style={[styles.input, { color: value ? colors.text : colors.textMuted, lineHeight: 48 }]}>
+          {display}
+        </Text>
+      </TouchableOpacity>
+
+      {Platform.OS === 'ios' && show && (
+        <Modal transparent animationType="slide">
+          <Pressable style={styles.modalOverlay} onPress={() => setShow(false)} />
+          <View style={[styles.iosPickerSheet, { backgroundColor: colors.surface ?? '#fff' }]}>
+            <View style={styles.iosPickerHeader}>
+              <TouchableOpacity onPress={() => setShow(false)}>
+                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={toDate(value)}
+              mode="time"
+              display="spinner"
+              is24Hour={false}
+              minuteInterval={5}
+              onChange={onConfirm}
+              style={{ width: '100%' }}
+            />
+          </View>
+        </Modal>
+      )}
+
+      {Platform.OS === 'android' && show && (
+        <DateTimePicker
+          value={toDate(value)}
+          mode="time"
+          display="clock"
+          is24Hour={false}
+          minuteInterval={5}
+          onChange={onConfirm}
+        />
+      )}
+    </>
+  );
+}
+
 export default function CreateEvent() {
   const { colors, spacing, typography, roundness } = useTheme();
   const insets = useSafeAreaInsets();
@@ -55,6 +260,7 @@ export default function CreateEvent() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  // date stored as YYYY-MM-DD (ISO), time stored as HH:mm (24h)
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [venue, setVenue] = useState('');
@@ -78,7 +284,7 @@ export default function CreateEvent() {
     if (!result.canceled) setBannerUri(result.assets[0].uri);
   };
 
-  const isFormValid = title.trim() && description.trim() && date.trim().match(/^\d{2}\/\d{2}\/\d{4}$/) && venue.trim();
+  const isFormValid = title.trim() && description.trim() && date.trim().match(/^\d{4}-\d{2}-\d{2}$/) && venue.trim();
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -108,19 +314,14 @@ export default function CreateEvent() {
     if (!isFormValid) return;
     let startsAt: string;
     try {
-      const [day, month, year] = date.trim().split('/');
+      const [year, month, day] = date.trim().split('-').map(Number);
       let hours = 0, minutes = 0;
       if (time.trim()) {
-        const t = time.trim();
-        const isPM = /pm/i.test(t);
-        const isAM = /am/i.test(t);
-        const [hStr, mStr] = t.replace(/[apm]/gi, '').trim().split(':');
+        const [hStr, mStr] = time.trim().split(':');
         hours = parseInt(hStr) || 0;
         minutes = parseInt(mStr) || 0;
-        if (isPM && hours < 12) hours += 12;
-        if (isAM && hours === 12) hours = 0;
       }
-      const parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes);
+      const parsed = new Date(year, month - 1, day, hours, minutes);
       startsAt = isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
     } catch {
       startsAt = new Date().toISOString();
@@ -199,10 +400,20 @@ export default function CreateEvent() {
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <InputField label="Date" value={date} onChangeText={setDate} placeholder="DD/MM/YYYY" icon="calendar-outline" colors={colors} keyboardType="numeric" />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Date</Text>
+                {Platform.OS === 'web'
+                  ? <WebDateInput value={date} onChange={setDate} colors={colors} />
+                  : <MobileDateInput value={date} onChange={setDate} colors={colors} />}
+              </View>
             </View>
             <View style={{ flex: 1, marginLeft: 8 }}>
-              <InputField label="Time" value={time} onChangeText={setTime} placeholder="HH:MM AM" icon="time-outline" colors={colors} />
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Time</Text>
+                {Platform.OS === 'web'
+                  ? <WebTimeInput value={time} onChange={setTime} colors={colors} />
+                  : <MobileTimeInput value={time} onChange={setTime} colors={colors} />}
+              </View>
             </View>
           </View>
 
@@ -368,5 +579,27 @@ const styles = StyleSheet.create({
   fullWidthButtonText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  iosPickerSheet: {
+    paddingBottom: 32,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  iosPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
 });

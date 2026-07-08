@@ -72,7 +72,7 @@ export default function ViewStoryScreen() {
     if (index < stories.length - 1) {
       setIndex((i) => i + 1);
     } else {
-      router.back();
+      if (router.canGoBack()) router.back(); else router.replace('/(tabs)');
     }
   };
 
@@ -80,7 +80,7 @@ export default function ViewStoryScreen() {
     if (index > 0) {
       setIndex((i) => i - 1);
     } else {
-      router.back();
+      if (router.canGoBack()) router.back(); else router.replace('/(tabs)');
     }
   };
 
@@ -97,7 +97,7 @@ export default function ViewStoryScreen() {
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: '#FFF', fontSize: 16 }}>Story not found or expired.</Text>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={{ marginTop: 20 }}>
             <Text style={{ color: '#FFF', fontWeight: '700' }}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -167,7 +167,7 @@ export default function ViewStoryScreen() {
               <Text style={styles.userName}>{group?.user.displayName ?? story.author?.displayName ?? ''}</Text>
               <Text style={styles.timeText}>{formatTime(story.createdAt)}</Text>
             </View>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
               <Ionicons name="close" size={28} color="#FFF" />
             </TouchableOpacity>
           </View>

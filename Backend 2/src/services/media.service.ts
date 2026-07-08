@@ -125,6 +125,34 @@ export const mediaService = {
     return this._uploadToS3(file, key, uploadedBy);
   },
 
+  async uploadPostVideo(file: UploadedFile, uploadedBy: string): Promise<{ id: string; filename: string; url: string; mimeType: string; fileSize: number }> {
+    const VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm']);
+    const EXECUTABLE_TYPES = new Set(['application/x-msdownload', 'application/x-executable', 'application/x-sh']);
+
+    if (EXECUTABLE_TYPES.has(file.mimetype.toLowerCase())) throw ApiError.badRequest('Executable files are not allowed.');
+    if (!VIDEO_MIME_TYPES.has(file.mimetype.toLowerCase())) throw ApiError.badRequest('Unsupported video format. Allowed: MP4, MOV, AVI, WebM.');
+    if (file.size > MAX_SIZE) throw ApiError.badRequest('Maximum video size allowed is 50 MB.');
+
+    const extension = path.extname(file.originalname) || '.mp4';
+    const filename = `video-${crypto.randomUUID()}${extension}`;
+    const key = `feed/${filename}`;
+
+    await s3.send(new PutObjectCommand({
+      Bucket: storageBucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+
+    const url = `/api/v1/media/proxy/${encodeURIComponent(key)}`;
+
+    const mediaFile = await prisma.mediaFile.create({
+      data: { filename: key, originalName: file.originalname, mimeType: file.mimetype, fileSize: file.size, url, uploadedBy },
+    });
+
+    return { id: mediaFile.id, filename: key, url, mimeType: file.mimetype, fileSize: file.size };
+  },
+
   // Profile images use a relative proxy path so any client IP can resolve them correctly.
   // The frontend's toAbs() in authStore prepends the correct base URL at runtime.
   async _uploadProfileToS3(file: UploadedFile, key: string, uploadedBy: string): Promise<{ id: string; filename: string; url: string }> {
@@ -154,7 +182,8 @@ export const mediaService = {
       ContentType: file.mimetype,
     }));
 
-    const url = proxyUrl(key);
+    // Store a relative URL so any client IP resolves it correctly via toAbs()
+    const url = `/api/v1/media/proxy/${encodeURIComponent(key)}`;
 
     const mediaFile = await prisma.mediaFile.create({
       data: { filename: key, originalName: file.originalname, mimeType: file.mimetype, fileSize: file.size, url, uploadedBy },

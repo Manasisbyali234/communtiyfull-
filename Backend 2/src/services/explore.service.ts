@@ -49,46 +49,56 @@ export const exploreService = {
     );
   },
 
-  async getSuggestedUsers(userId: string, limit = 10) {
-    // Users followed by people you follow (2nd degree connections)
-    const following = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: { followingId: true },
-    });
-    const followingIds = following.map((f) => f.followingId);
-
-    if (!followingIds.length) {
-      // Fallback: most followed users
-      return prisma.user.findMany({
-        where: { id: { not: userId }, isActive: true, deletedAt: null },
-        orderBy: { followers: { _count: 'desc' } },
-        take: limit,
-        select: {
-          id: true, username: true, displayName: true, avatarUrl: true,
-          isVerified: true, bio: true, role: true,
-          _count: { select: { followers: true } },
-        },
+  async getSuggestedUsers(userId: string, limit = 20) {
+    return withCache(`explore:suggested_users:${userId}:${limit}`, async () => {
+      // Users followed by people you follow (2nd degree connections)
+      const following = await prisma.follow.findMany({
+        where: { followerId: userId },
+        select: { followingId: true },
       });
-    }
+      const followingIds = following.map((f) => f.followingId);
 
-    const secondDegree = await prisma.follow.findMany({
-      where: {
-        followerId: { in: followingIds },
-        followingId: { notIn: [...followingIds, userId] },
-      },
-      select: { followingId: true },
-    });
-
-    const candidateIds = [...new Set(secondDegree.map((f) => f.followingId))].slice(0, limit * 2);
-
-    return prisma.user.findMany({
-      where: { id: { in: candidateIds }, isActive: true, deletedAt: null },
-      take: limit,
-      select: {
+      const select = {
         id: true, username: true, displayName: true, avatarUrl: true,
         isVerified: true, bio: true, role: true,
         _count: { select: { followers: true } },
-      },
+      };
+
+      if (!followingIds.length) {
+        // Fallback: most followed users excluding self
+        return prisma.user.findMany({
+          where: { id: { not: userId }, deletedAt: null },
+          orderBy: { followers: { _count: 'desc' } },
+          take: limit,
+          select,
+        });
+      }
+
+      const secondDegree = await prisma.follow.findMany({
+        where: {
+          followerId: { in: followingIds },
+          followingId: { notIn: [...followingIds, userId] },
+        },
+        select: { followingId: true },
+      });
+
+      const candidateIds = [...new Set(secondDegree.map((f) => f.followingId))].slice(0, limit * 2);
+
+      if (!candidateIds.length) {
+        // Fallback if no 2nd-degree connections found
+        return prisma.user.findMany({
+          where: { id: { notIn: [...followingIds, userId] }, deletedAt: null },
+          orderBy: { followers: { _count: 'desc' } },
+          take: limit,
+          select,
+        });
+      }
+
+      return prisma.user.findMany({
+        where: { id: { in: candidateIds }, deletedAt: null },
+        take: limit,
+        select,
+      });
     });
   },
 

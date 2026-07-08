@@ -1,18 +1,41 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
+import { StyleSheet, View, Platform } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 
 interface VideoPostPlayerProps {
   url: string;
 }
 
 export const VideoPostPlayer: React.FC<VideoPostPlayerProps> = ({ url }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        {/* @ts-ignore */}
+        <video
+          src={url}
+          controls
+          playsInline
+          preload="metadata"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            backgroundColor: '#000',
+            borderRadius: 16,
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Image
+      <Video
         source={{ uri: url }}
-        style={styles.image}
-        contentFit="cover"
+        style={styles.video}
+        useNativeControls
+        resizeMode={ResizeMode.CONTAIN}
+        shouldPlay={false}
       />
     </View>
   );
@@ -20,15 +43,13 @@ export const VideoPostPlayer: React.FC<VideoPostPlayerProps> = ({ url }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     width: '100%',
     height: '100%',
-    alignSelf: 'stretch',
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#000',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  image: {
+  video: {
     width: '100%',
     height: '100%',
   },

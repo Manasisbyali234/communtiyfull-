@@ -34,7 +34,8 @@ export interface Community {
   isPrivate: boolean;
   memberCount: number;
   membersCount?: number; // Alias
-  rules?: string[];
+  rules?: Array<string | { title: string; description?: string; id?: string; order?: number }>;
+  feedPostPrompts?: string[];
   createdAt: string;
   updatedAt: string;
   isJoined?: boolean; // Injected by backend serializers
@@ -53,6 +54,10 @@ export interface Post {
   images?: string[]; // Alias
   tags?: string[];
   mediaType?: 'IMAGE' | 'VIDEO' | 'video' | 'image';
+  videoUrl?: string;
+  videoFileName?: string;
+  mimeType?: string;
+  fileSize?: number;
   likesCount: number;
   commentsCount: number;
   createdAt: string;

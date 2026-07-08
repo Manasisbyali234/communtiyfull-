@@ -55,7 +55,7 @@ export default function ForgotPassword() {
       >
         {/* Header Back Button */}
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')}
           style={[styles.backBtn, { backgroundColor: colors.surface }]}
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />

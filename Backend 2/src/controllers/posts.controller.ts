@@ -26,8 +26,9 @@ export const postsController = {
 
   createPost: asyncHandler(async (req: Request, res: Response) => {
     const post = await postsService.createPost(req.user.id, req.body as {
-      content: string; mediaUrls?: string[]; communityId?: string;
-      isDraft?: boolean; scheduledAt?: Date | null;
+      content: string; mediaUrls?: string[]; mediaType?: string;
+      videoUrl?: string; videoFileName?: string; mimeType?: string; fileSize?: number;
+      communityId?: string; isDraft?: boolean; scheduledAt?: Date | null; tags?: string[];
     });
     res.status(201).json(new ApiResponse(201, post, 'Post created'));
   }),

@@ -56,12 +56,14 @@ export function useCommunityDetailsQuery(id: string) {
     enabled: !!id && isAuthenticated,
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<Community>>(`/communities/${id}`);
-      const c = res.data.data;
+      const c = res.data.data as any;
       return {
         ...c,
         avatarUrl: toAbsoluteUrl(c.avatarUrl),
         bannerUrl: toAbsoluteUrl(c.bannerUrl),
-        membersCount: (c as any).membersCount ?? (c as any).memberCount ?? 0,
+        membersCount: c.membersCount ?? c.memberCount ?? 0,
+        rules: c.rules ?? [],
+        feedPostPrompts: c.feedPostPrompts ?? [],
       };
     },
   });
@@ -74,7 +76,7 @@ export function useJoinCommunityMutation() {
     mutationFn: async ({ communityId, isJoined }) => {
       try {
         if (isJoined) {
-          await apiClient.post(`/communities/${communityId}/leave`);
+          await apiClient.delete(`/communities/${communityId}/join`);
           return null;
         }
         const res = await apiClient.post<ApiResponse<Community>>(`/communities/${communityId}/join`);

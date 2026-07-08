@@ -1,6 +1,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 import { apiClient } from '../api/client';
+import { API_BASE_URL } from '../api/config';
+import { useAuthStore } from '../store/authStore';
+
+const BASE = API_BASE_URL.replace('/api/v1', '');
+const toAbs = (url: string | null): string | null =>
+  url && url.startsWith('/') ? `${BASE}${url}` : url;
 
 export interface PickedImage {
   localUri: string;
@@ -40,9 +46,8 @@ export async function uploadImage(picked: PickedImage): Promise<string | null> {
   }
 
   const res = await apiClient.post('/media/upload', formData);
-
   const url = res.data?.data?.url ?? res.data?.url ?? null;
-  return url;
+  return toAbs(url);
 }
 
 async function _uploadToEndpoint(picked: PickedImage, endpoint: string): Promise<string | null> {
@@ -57,7 +62,8 @@ async function _uploadToEndpoint(picked: PickedImage, endpoint: string): Promise
   }
 
   const res = await apiClient.post(endpoint, formData);
-  return res.data?.data?.url ?? res.data?.url ?? null;
+  const url = res.data?.data?.url ?? res.data?.url ?? null;
+  return toAbs(url);
 }
 
 export async function uploadProfilePhoto(picked: PickedImage): Promise<string | null> {
@@ -70,6 +76,50 @@ export async function uploadCoverPhoto(picked: PickedImage): Promise<string | nu
 
 export async function uploadPostImage(picked: PickedImage): Promise<string | null> {
   return _uploadToEndpoint(picked, '/media/upload-post-image');
+}
+
+export async function uploadPostVideo(
+  picked: PickedImage,
+  onProgress?: (pct: number) => void
+): Promise<string | null> {
+  const formData = new FormData();
+
+  if (Platform.OS === 'web') {
+    const response = await fetch(picked.localUri);
+    const blob = await response.blob();
+    formData.append('file', new File([blob], picked.filename, { type: picked.mimeType }));
+  } else {
+    formData.append('file', { uri: picked.localUri, name: picked.filename, type: picked.mimeType } as any);
+  }
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE}/api/v1/media/upload-post-video`);
+
+    // Attach auth token
+    const { token } = useAuthStore.getState();
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const json = JSON.parse(xhr.responseText);
+          const url = json?.data?.url ?? null;
+          resolve(url && url.startsWith('/') ? `${BASE}${url}` : url);
+        } catch { reject(new Error('Invalid response')); }
+      } else {
+        try {
+          const json = JSON.parse(xhr.responseText);
+          reject(new Error(json?.message || 'Upload failed'));
+        } catch { reject(new Error('Upload failed')); }
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(formData);
+  });
 }
 
 /** @deprecated use pickImage + uploadImage separately */

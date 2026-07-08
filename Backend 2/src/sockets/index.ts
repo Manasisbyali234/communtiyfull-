@@ -11,7 +11,11 @@ let io: Server;
 export function initSocketServer(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: config.CORS_ORIGINS.trim() === '*' ? true : config.CORS_ORIGINS.split(',').map((o) => o.trim()),
+      origin: (origin, callback) => {
+        // credentials:true is incompatible with a wildcard origin.
+        // Accept every origin explicitly so cookies/auth headers are allowed.
+        callback(null, origin ?? '*');
+      },
       methods: ['GET', 'POST'],
       credentials: true,
       allowedHeaders: ['Authorization', 'Content-Type'],

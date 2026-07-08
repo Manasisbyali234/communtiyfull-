@@ -24,6 +24,7 @@ router.post('/upload-event', uploadMiddleware, multerErrorHandler, mediaControll
 router.post('/upload-profile-photo', uploadMiddleware, multerErrorHandler, mediaController.uploadProfilePhoto);
 router.post('/upload-cover-photo', uploadMiddleware, multerErrorHandler, mediaController.uploadCoverPhoto);
 router.post('/upload-post-image', uploadMiddleware, multerErrorHandler, mediaController.uploadPostImage);
+router.post('/upload-post-video', uploadMiddleware, multerErrorHandler, mediaController.uploadPostVideo);
 router.post('/upload', uploadMiddleware, multerErrorHandler, mediaController.upload);
 router.post('/upload-multiple', uploadMultipleMiddleware, multerErrorHandler, mediaController.uploadMultiple);
 

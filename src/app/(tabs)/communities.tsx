@@ -12,8 +12,6 @@ import Skeleton from '../../components/feedback/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { useToastStore } from '../../store/toastStore';
 
-const CATEGORIES = ['All', 'Design', 'Tech', 'Travel', 'Fitness'];
-
 export default function CommunitiesDirectory() {
   const { colors, spacing, typography, roundness } = useTheme();
   const insets = useSafeAreaInsets();
@@ -25,6 +23,8 @@ export default function CommunitiesDirectory() {
 
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const CATEGORIES = ['All', ...Array.from(new Set(communities.map((c) => c.category).filter(Boolean)))];
 
   const handleJoinPress = (communityId: string, isJoined: boolean) => {
     joinMutation.mutate({ communityId, isJoined });

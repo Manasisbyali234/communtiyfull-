@@ -8,7 +8,7 @@ const getBase = () => API_BASE_URL.replace('/api/v1', '');
 const toAbs = (url?: string): string | undefined => {
   if (!url) return undefined;
   if (url.startsWith('/')) return `${getBase()}${url}`;
-  const s3Match = url.match(/https?:\/\/[^/]+\.s3\.[^/]+\.amazonaws\.com\/(.+)/);
+  const s3Match = url.match(/https?:\/\/.+?\.amazonaws\.com\/(.+)/);
   if (s3Match) return `${getBase()}/api/v1/media/proxy/${encodeURIComponent(s3Match[1])}`;
   if (url.includes('localhost')) return url.replace(/http:\/\/localhost(:\d+)?/, getBase());
   return url;

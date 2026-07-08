@@ -90,7 +90,7 @@ function CameraScreen({ onMedia }: { onMedia: (m: MediaItem) => void }) {
     return (
       <View style={s.container}>
         <SafeAreaView style={s.safeTop}>
-          <TouchableOpacity style={s.closeBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.closeBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
             <Ionicons name="close" size={30} color="#FFF" />
           </TouchableOpacity>
         </SafeAreaView>
@@ -161,7 +161,7 @@ function CameraScreen({ onMedia }: { onMedia: (m: MediaItem) => void }) {
       {/* Top bar */}
       <SafeAreaView style={s.safeTop}>
         <View style={s.topBar}>
-          <TouchableOpacity style={s.closeBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.closeBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
             <Ionicons name="close" size={30} color="#FFF" />
           </TouchableOpacity>
           <View style={s.topRight}>

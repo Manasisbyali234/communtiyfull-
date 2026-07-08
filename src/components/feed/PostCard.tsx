@@ -255,14 +255,16 @@ export const PostCard: React.FC<PostCardProps> = React.memo(({ post, onCommentPr
       )}
 
       {/* ── Media ────────────────────────────────────────────────────────── */}
-      {(post.mediaUrl || (post.images && post.images.length > 0)) && (
+      {(post.videoUrl || post.mediaUrl || (post.images && post.images.length > 0)) && (
         <Pressable onPress={handleDoubleTap}>
           <View style={post.images && post.images.length > 0 ? styles.imageGrid : styles.mediaContainer}>
             {post.images && post.images.length > 0 ? (
               post.images.map((uri, i) => (
                 <Image key={i} source={{ uri }} style={styles.gridImg} contentFit="cover" transition={300} />
               ))
-            ) : post.mediaType === 'video' ? (
+            ) : post.videoUrl ? (
+              <VideoPostPlayer url={post.videoUrl} />
+            ) : post.mediaType === 'video' || post.mediaType === 'VIDEO' ? (
               <VideoPostPlayer url={post.mediaUrl!} />
             ) : (
               <Image

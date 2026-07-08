@@ -7,11 +7,19 @@ import { validate } from '../../middleware/validate';
 const router = Router();
 
 const CreatePostSchema = z.object({
-  content: z.string().min(1).max(5000),
-  mediaUrls: z.array(z.string().url()).max(10).optional(),
-  communityId: z.string().cuid().optional(),
+  content: z.string().max(5000).optional().default(''),
+  mediaUrls: z.array(z.string().min(1)).max(10).optional(),
+  mediaType: z.enum(['IMAGE', 'VIDEO', 'AUDIO']).optional(),
+  videoUrl: z.string().optional(),
+  videoFileName: z.string().optional(),
+  mimeType: z.string().optional(),
+  fileSize: z.number().optional(),
+  communityId: z.string().cuid().optional().nullable().transform(v => v || undefined),
   isDraft: z.boolean().optional(),
   scheduledAt: z.coerce.date().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+}).refine(data => (data.content && data.content.trim().length > 0) || (data.mediaUrls && data.mediaUrls.length > 0) || !!data.videoUrl, {
+  message: 'Post must have content, an image, or a video',
 });
 
 const UpdatePostSchema = z.object({

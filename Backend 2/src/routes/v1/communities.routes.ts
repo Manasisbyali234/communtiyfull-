@@ -13,6 +13,7 @@ const CreateCommunitySchema = z.object({
   isPrivate: z.boolean().default(false),
   avatarUrl: z.string().url().optional(),
   bannerUrl: z.string().url().optional(),
+  feedPostPrompts: z.array(z.string().max(200)).optional(),
 });
 
 const UpdateCommunitySchema = CreateCommunitySchema.partial();

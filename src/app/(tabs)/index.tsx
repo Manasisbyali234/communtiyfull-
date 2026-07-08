@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState, useCallback, useMemo } from 'react';
 import {
-  Animated, Dimensions,
+  Animated,
   Platform,
   RefreshControl,
   ScrollView,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
   Share,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCommunitiesQuery } from '../../api/community';
@@ -27,7 +28,6 @@ import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../theme';
 const FlashList = ShopifyFlashList as any;
 
-const EVENT_CARD_WIDTH = Math.min(220, (Dimensions.get('window').width || 375) * 0.58);
 
 // Quick action shortcut definition
 const QUICK_ACTIONS = [
@@ -43,6 +43,9 @@ export default function HomeFeed() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { width: screenWidth } = useWindowDimensions();
+  const eventCardWidth = Math.min(220, screenWidth * 0.58);
+  const isSmallScreen = screenWidth < 360;
 
   const { data: posts = [], isLoading, refetch } = usePostsQuery();
   const { data: communities = [] } = useCommunitiesQuery();
@@ -150,7 +153,7 @@ export default function HomeFeed() {
         <Ionicons name="leaf" size={60} color={colors.primary + '20'} />
       </View>
       <View style={styles.welcomeContent}>
-        <Text style={[styles.welcomeGreeting, { color: colors.primaryDark }]}>
+        <Text style={[styles.welcomeGreeting, { color: colors.primaryDark, fontSize: isSmallScreen ? 16 : 20 }]}>
           {getGreeting()}, {user?.displayName?.split(' ')[0] || 'Member'} 🙏
         </Text>
         <Text style={[styles.welcomeSub, { color: colors.textSecondary }]}>
@@ -186,7 +189,7 @@ export default function HomeFeed() {
             return (
               <TouchableOpacity
                 key={event.id}
-                style={[styles.eventCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                style={[styles.eventCard, { backgroundColor: colors.surface, borderColor: colors.border, width: eventCardWidth }]}
                 activeOpacity={0.85}
                 onPress={() => router.push('/(tabs)/explore?tab=events' as any)}
               >
@@ -261,7 +264,7 @@ export default function HomeFeed() {
             activeOpacity={0.75}
             style={styles.quickActionItem}
           >
-            <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
+            <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15', width: isSmallScreen ? 46 : 56, height: isSmallScreen ? 46 : 56 }]}>
               <Ionicons name={action.icon as any} size={24} color={action.color} />
             </View>
             <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>{action.label}</Text>
@@ -298,7 +301,7 @@ export default function HomeFeed() {
             <Ionicons name="leaf" size={18} color={colors.primary} />
           </View>
           <View>
-            <Text style={[styles.appBarTitle, { color: colors.text }]}>
+            <Text style={[styles.appBarTitle, { color: colors.text, fontSize: isSmallScreen ? 15 : 18 }]}>
               Gowda<Text style={{ color: colors.primary }}> Community</Text>
             </Text>
             <Text style={[styles.appBarSub, { color: colors.textMuted }]}>Kodagu District</Text>
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
   quickActionsRow: { flexDirection: 'row', gap: 10 },
   quickActionItem: { flex: 1, alignItems: 'center', gap: 8 },
   quickActionIcon: {
-    width: 56, height: 56, borderRadius: 16,
+    borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
   quickActionLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
@@ -508,7 +511,6 @@ const styles = StyleSheet.create({
   seeAllText: { fontSize: 13, fontWeight: '600' },
   eventsScroll: { gap: 12, paddingRight: 4 },
   eventCard: {
-    width: EVENT_CARD_WIDTH,
     borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
