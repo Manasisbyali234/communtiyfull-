@@ -1,1 +1,0 @@
-{"version":3,"file":"blocks.service.d.ts","sourceRoot":"","sources":["../../src/services/blocks.service.ts"],"names":[],"mappings":"AAIA,eAAO,MAAM,aAAa;yBACG,MAAM,aAAa,MAAM;2BAuBvB,MAAM,aAAa,MAAM;yBAI3B,MAAM,aAAa,MAAM,GAAG,OAAO,CAAC,OAAO,CAAC;4BAOzC,MAAM,WAAW,MAAM;;;;;;IAYrD;;OAEG;0BACyB,MAAM,GAAG,OAAO,CAAC,MAAM,EAAE,CAAC;CAOvD,CAAC"}
