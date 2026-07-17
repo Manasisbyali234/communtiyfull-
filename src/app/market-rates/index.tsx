@@ -20,7 +20,7 @@ const CROPS = [
   { id: 'blackpepper', name: 'Black Pepper',  image: require('../../../assets/images/crops/blackpepper.png') },
   { id: 'cardamom',    name: 'Cardamom',      image: require('../../../assets/images/crops/cardamom.png') },
   { id: 'vanilla',     name: 'Vanilla',       image: require('../../../assets/images/crops/vanilla.png') },
-  { id: 'cinnamon',    name: 'Cinnamon',      image: require('../../../assets/images/crops/cinnamon.png') },
+  { id: 'cinnamon',    name: 'Cinnamo',      image: require('../../../assets/images/crops/cinnamon.png') },
   { id: 'arecanut',    name: 'Arecanut',      image: require('../../../assets/images/crops/arecanut.png') },
   { id: 'coconut',     name: 'Coconut',       image: require('../../../assets/images/crops/coconut.jpg') },
   { id: 'tea',         name: 'Tea',           image: require('../../../assets/images/crops/tea.jpg') },
