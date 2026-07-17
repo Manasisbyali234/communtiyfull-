@@ -34,9 +34,10 @@ const _initSocket = async () => {
   socket = io(SOCKET_URL, {
     auth: { token },
     transports: ['polling', 'websocket'],
-    reconnectionAttempts: 3,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 3000,
-    timeout: 5000,
+    reconnectionDelayMax: 10000,
+    timeout: 10000,
   });
 
   socket.on('connect', () => {
