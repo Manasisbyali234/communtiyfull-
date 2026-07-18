@@ -17,11 +17,11 @@ import { useTheme } from '../../theme';
 
 const CROPS = [
   { id: 'coffee',      name: 'Coffee',       image: require('../../../assets/images/crops/coffee.jpg') },
-  { id: 'blackpepper', name: 'Black Pepper',  image: require('../../../assets/images/crops/blackpepper.png') },
-  { id: 'cardamom',    name: 'Cardamom',      image: require('../../../assets/images/crops/cardamom.png') },
-  { id: 'vanilla',     name: 'Vanilla',       image: require('../../../assets/images/crops/vanilla.png') },
-  { id: 'cinnamon',    name: 'Cinnamon',      image: require('../../../assets/images/crops/cinnamon.png') },
-  { id: 'arecanut',    name: 'Arecanut',      image: require('../../../assets/images/crops/arecanut.png') },
+  { id: 'blackpepper', name: 'Black Pepper',  image: require('../../../assets/images/crops/blackpepper.jpg') },
+  { id: 'cardamom',    name: 'Cardamom',      image: require('../../../assets/images/crops/cardamom.jpg') },
+  { id: 'vanilla',     name: 'Vanilla',       image: require('../../../assets/images/crops/vanilla.jpg') },
+  { id: 'cinnamon',    name: 'Cinnamon',      image: require('../../../assets/images/crops/cinnamon.jpg') },
+  { id: 'arecanut',    name: 'Arecanut',      image: require('../../../assets/images/crops/arecanut.jpg') },
   { id: 'coconut',     name: 'Coconut',       image: require('../../../assets/images/crops/coconut.jpg') },
   { id: 'tea',         name: 'Tea',           image: require('../../../assets/images/crops/tea.jpg') },
   { id: 'orange',      name: 'Orange',        image: require('../../../assets/images/crops/orange.jpg') },
