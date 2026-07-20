@@ -13,7 +13,6 @@ import Button from '../../components/common/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../api/client';
-import { adminApiClient } from '../../api/adminClient';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -48,11 +47,7 @@ export default function Login() {
       await login(user, accessToken, refreshToken);
 
       if (user.role?.toUpperCase() === 'ADMIN') {
-        try {
-          const adminRes = await adminApiClient.post('/admin-auth/login', { email: data.email, password: data.password });
-          const { token, admin } = adminRes.data.data;
-          adminLogin(admin, token);
-        } catch (_) {}
+        adminLogin({ id: user.id, email: user.email ?? '', username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl, role: user.role ?? 'ADMIN' }, accessToken);
         showToast('Welcome, Admin!', 'success');
         router.replace('/(admin)/dashboard' as any);
       } else {
