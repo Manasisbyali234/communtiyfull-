@@ -67,7 +67,7 @@ function RootLayoutContent() {
     if (isLoading || !tokensInitialized) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inAdminGroup = segments[0] === '(admin)' || segments[0] === 'admin-login';
+    const inAdminGroup = segments[0] === '(admin)';
     const inAppGroup = segments[0] === '(tabs)' || segments[0] === 'create' || segments[0] === 'chat' || segments[0] === 'story' || segments[0] === 'community' || segments[0] === 'krushi-mitra' || segments[0] === 'market-rates';
 
     // Admin routes: only skip guard if user is actually an admin
