@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { getApiBaseUrl } from './config';
-import { useAuthStore } from '../store/authStore';
 import { useAdminStore } from '../store/adminStore';
 
 export const adminApiClient = axios.create({
@@ -10,8 +9,7 @@ export const adminApiClient = axios.create({
 });
 
 adminApiClient.interceptors.request.use((config) => {
-  // Use authStore token (the regular accessToken which is valid for admin endpoints)
-  const token = useAuthStore.getState().token;
+  const token = useAdminStore.getState().token;
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,7 +21,6 @@ adminApiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAdminStore.getState().logout();
-      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }

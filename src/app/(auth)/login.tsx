@@ -13,6 +13,8 @@ import Button from '../../components/common/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../api/client';
+import axios from 'axios';
+import { getApiBaseUrl } from '../../api/config';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -47,7 +49,15 @@ export default function Login() {
       await login(user, accessToken, refreshToken);
 
       if (user.role?.toUpperCase() === 'ADMIN') {
-        adminLogin({ id: user.id, email: user.email ?? '', username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl, role: user.role ?? 'ADMIN' }, accessToken);
+        try {
+          // Use plain axios — no auth header needed, /admin-auth/login is public
+          const adminRes = await axios.post(`${getApiBaseUrl()}/admin-auth/login`, { email: data.email, password: data.password });
+          const { token, admin } = adminRes.data.data;
+          adminLogin(admin, token);
+        } catch (e: any) {
+          showToast(e.response?.data?.message ?? 'Admin session failed', 'error');
+          return;
+        }
         showToast('Welcome, Admin!', 'success');
         router.replace('/(admin)/dashboard' as any);
       } else {
