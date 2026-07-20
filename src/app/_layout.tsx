@@ -70,8 +70,8 @@ function RootLayoutContent() {
     const inAdminGroup = segments[0] === '(admin)' || segments[0] === 'admin-login';
     const inAppGroup = segments[0] === '(tabs)' || segments[0] === 'create' || segments[0] === 'chat' || segments[0] === 'story' || segments[0] === 'community' || segments[0] === 'krushi-mitra' || segments[0] === 'market-rates';
 
-    // Admin routes are handled by their own layout — skip user auth guard
-    if (inAdminGroup) return;
+    // Admin routes: only skip guard if user is actually an admin
+    if (inAdminGroup && isAdmin) return;
 
     if (!isLoggedIn) {
       if (!inAuthGroup && !isNavigating.current) {
@@ -80,12 +80,15 @@ function RootLayoutContent() {
       }
     } else {
       isNavigating.current = false;
-      if (inAuthGroup || !inAppGroup) {
+      if (isAdmin) {
+        // Always keep admin in the admin group
+        if (!inAdminGroup) {
+          router.replace('/(admin)/dashboard' as any);
+        }
+      } else if (inAuthGroup || !inAppGroup) {
         if (!redirectedToIntended.current && intendedPath && !intendedPath.startsWith('/(auth)') && intendedPath !== '/' && intendedPath !== '/index') {
           redirectedToIntended.current = true;
           router.replace(intendedPath as any);
-        } else if (isAdmin) {
-          router.replace('/(admin)/dashboard' as any);
         } else {
           router.replace('/(tabs)');
         }
