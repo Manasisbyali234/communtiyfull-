@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Modal, 
 import { useRouter, useSegments } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAdminStore } from '../../store/adminStore';
+import { useAuthStore } from '../../store/authStore';
 import { adminApiClient } from '../../api/adminClient';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
@@ -24,6 +25,7 @@ export default function AdminShell({ children, title }: Props) {
   const router = useRouter();
   const segments = useSegments();
   const { admin, logout } = useAdminStore();
+  const logoutAuth = useAuthStore((s) => s.logout);
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -56,7 +58,8 @@ export default function AdminShell({ children, title }: Props) {
   const handleLogout = async () => {
     try { await adminApiClient.post('/admin-auth/logout'); } catch {}
     logout();
-    router.replace('/admin-login' as any);
+    await logoutAuth();
+    router.replace('/(auth)/login' as any);
   };
 
   const renderItem = (item: typeof NAV_MAIN[0]) => {
