@@ -86,7 +86,7 @@ export const lightTheme = {
     surface: '#FFFFFF',
     surfaceVariant: '#EDF4EC',    // Soft green tint surface
     surfaceSecondary: '#F4F9F0',
-    surfaceContainer: '#EEEEE',
+    surfaceContainer: '#EEEEEE',
     surfaceContainerLow: '#F8FCF5',
     surfaceContainerHigh: '#E8F5E9',
 

@@ -58,11 +58,12 @@ const CROP_IMAGES: Record<string, any> = {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function parseDateLabel(iso: string) {
-  const d = new Date(iso + 'T00:00:00');
+  const [y, m, day] = iso.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
   return {
     dayName: DAY_NAMES[d.getDay()],
     dayNum: d.getDate(),
-    ddmm: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+    ddmm: `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}`,
   };
 }
 

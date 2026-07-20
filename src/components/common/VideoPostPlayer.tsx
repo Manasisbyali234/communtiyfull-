@@ -1,11 +1,16 @@
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 
 interface VideoPostPlayerProps {
   url: string;
 }
 
 export const VideoPostPlayer: React.FC<VideoPostPlayerProps> = ({ url }) => {
+  const player = useVideoPlayer(url, (p) => {
+    p.loop = false;
+  });
+
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
@@ -27,16 +32,13 @@ export const VideoPostPlayer: React.FC<VideoPostPlayerProps> = ({ url }) => {
     );
   }
 
-  const { Video, ResizeMode } = require('expo-av');
-
   return (
     <View style={styles.container}>
-      <Video
-        source={{ uri: url }}
+      <VideoView
+        player={player}
         style={styles.video}
-        useNativeControls
-        resizeMode={ResizeMode.CONTAIN}
-        shouldPlay={false}
+        nativeControls
+        contentFit="contain"
       />
     </View>
   );
