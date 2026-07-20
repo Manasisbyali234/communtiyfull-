@@ -237,10 +237,16 @@ export default function ExploreScreen() {
   });
 
   const filteredEvents = events.filter((e: any) => {
+    const now = new Date();
+    const start = new Date(e.startsAt);
+    const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+    const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
     const filterMatch = selectedEventFilter === 'All' ||
-      (selectedEventFilter === 'Upcoming' && ! (new Date(e.startsAt) < new Date())) ||
-      (selectedEventFilter === 'Past' && (new Date(e.startsAt) < new Date())) ||
-      (selectedEventFilter === 'My Events' && e.userRsvpStatus === 'GOING');
+      (selectedEventFilter === 'Upcoming' && start >= now) ||
+      (selectedEventFilter === 'Past' && start < now) ||
+      (selectedEventFilter === 'Today' && start >= now && start <= todayEnd) ||
+      (selectedEventFilter === 'This Week' && start >= now && start <= weekEnd) ||
+      (selectedEventFilter === 'My Events' && (e.userRsvpStatus === 'GOING' || e.isInterested));
     if (!filterMatch) return false;
     if (!debouncedSearch) return true;
     const q = debouncedSearch.toLowerCase();

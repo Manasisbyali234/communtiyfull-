@@ -55,7 +55,7 @@ export function useEventsQuery() {
       try {
         const res = await apiClient.get<ApiResponse<PaginatedResponse<Event>>>('/events');
         const data = res.data.data.data;
-        const normalized = (data ?? []).map(normalizeEvent).filter((e: any) => !e.status || e.status === 'APPROVED');
+        const normalized = (data ?? []).map(normalizeEvent);
         console.log('[useEventsQuery] events coverUrls:', normalized.map((e: Event) => ({ id: e.id, coverUrl: e.coverUrl })));
         return normalized;
       } catch {

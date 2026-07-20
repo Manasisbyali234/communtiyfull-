@@ -14,14 +14,7 @@ const toAbs = (url?: string): string | undefined => {
   if (url.includes('/api/v1/media/proxy/')) {
     try {
       const parsed = new URL(url);
-      const current = new URL(getBase());
-      if (parsed.host !== current.host) {
-        parsed.host = current.host;
-        parsed.port = current.port;
-        parsed.protocol = current.protocol;
-        return parsed.toString();
-      }
-      return url;
+      return `${getBase()}${parsed.pathname}${parsed.search}`;
     } catch (_) { return url; }
   }
   // S3 direct URL → rewrite through backend media proxy
@@ -63,6 +56,15 @@ export function useUserQuery(userId: string) {
 function normalizePost(p: any): Post {
   const rawUrls: string[] = p.mediaUrls ?? [];
   const absUrls = rawUrls.map((u: string) => toAbs(u) ?? u);
+  if (rawUrls.length > 0 || p.mediaUrl || p.videoUrl) {
+    console.log('[normalizePost] id:', p.id,
+      '| raw mediaUrls:', rawUrls,
+      '| raw mediaUrl:', p.mediaUrl,
+      '| raw videoUrl:', p.videoUrl,
+      '| absUrls:', absUrls,
+      '| resolved mediaUrl:', toAbs(p.mediaUrl) ?? absUrls[0],
+    );
+  }
   return {
     ...p,
     author: {
@@ -70,7 +72,7 @@ function normalizePost(p: any): Post {
       avatarUrl: toAbs(p.author?.avatarUrl) ?? p.author?.avatarUrl,
     },
     mediaUrls: absUrls,
-    mediaUrl: toAbs(p.mediaUrl) ?? toAbs(absUrls[0]) ?? undefined,
+    mediaUrl: toAbs(p.mediaUrl) ?? absUrls[0] ?? undefined,
     images: absUrls.length > 1 ? absUrls : (p.images?.map((u: string) => toAbs(u) ?? u) ?? undefined),
     videoUrl: toAbs(p.videoUrl) ?? p.videoUrl ?? undefined,
     tags: p.tags ?? p.hashtags?.map((h: any) => h.hashtag?.name ?? h.name) ?? [],
