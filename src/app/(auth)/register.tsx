@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,6 +34,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function Register() {
   const { colors, spacing, typography, palette, roundness } = useTheme();
   const router = useRouter();
+  const { ref } = useLocalSearchParams<{ ref?: string }>();
   const showToast = useToastStore((state) => state.showToast);
 
   const {
@@ -57,6 +58,7 @@ export default function Register() {
         password: data.password,
         username: data.username,
         displayName: data.username,
+        ...(ref ? { referredById: ref } : {}),
       });
       const { user, accessToken, refreshToken } = res.data.data;
       await useAuthStore.getState().login(user, accessToken, refreshToken);

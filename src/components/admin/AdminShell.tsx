@@ -15,6 +15,7 @@ const NAV_MAIN: { label: string; icon: FeatherIconName; key: string }[] = [
   { label: 'Communities',     icon: 'globe',        key: 'communities' },
   { label: 'Events',          icon: 'calendar',     key: 'events' },
   { label: 'Stories',         icon: 'book-open',    key: 'stories' },
+  { label: 'Referrals',       icon: 'share-2',      key: 'referrals' },
 ];
 
 const NAV_BOTTOM: typeof NAV_MAIN = [];

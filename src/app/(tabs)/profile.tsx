@@ -194,10 +194,11 @@ export default function ProfileScreen() {
 
   const handleShare = useCallback(async () => {
     const base = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
-    const link = user?.id ? `${base}/user/${user.id}` : `${base}/profile`;
+    const link = user?.id ? `${base}/user/${user.id}?ref=${user.id}` : `${base}/profile`;
     const ok = await shareUrl(
       `Check out ${user?.displayName || 'User'}'s profile on GowdaCommunity! ${link}`,
-      link
+      link,
+      user?.id
     );
     showToast(ok ? 'Link copied to clipboard!' : 'Could not share profile', ok ? 'success' : 'error');
   }, [user, showToast]);
