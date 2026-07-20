@@ -47,7 +47,7 @@ export default function Login() {
       const { user, accessToken, refreshToken } = res.data.data;
       await login(user, accessToken, refreshToken);
 
-      if (user.role === 'admin') {
+      if (user.role?.toUpperCase() === 'ADMIN') {
         try {
           const adminRes = await adminApiClient.post('/admin-auth/login', { email: data.email, password: data.password });
           const { token, admin } = adminRes.data.data;

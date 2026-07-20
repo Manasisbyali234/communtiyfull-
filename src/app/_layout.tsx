@@ -29,7 +29,7 @@ function RootLayoutContent() {
   const router = useRouter();
   const { isAuthenticated, isOnboarded, isLoading, token, user } = useAuthStore();
   const isLoggedIn = isAuthenticated || !!user;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
   const [tokensInitialized, setTokensInitialized] = useState(false);
   const redirectedToIntended = useRef(false);
   const isNavigating = useRef(false);
