@@ -29,6 +29,7 @@ function RootLayoutContent() {
   const router = useRouter();
   const { isAuthenticated, isOnboarded, isLoading, token, user } = useAuthStore();
   const isLoggedIn = isAuthenticated || !!user;
+  const isAdmin = user?.role === 'admin';
   const [tokensInitialized, setTokensInitialized] = useState(false);
   const redirectedToIntended = useRef(false);
   const isNavigating = useRef(false);
@@ -83,6 +84,8 @@ function RootLayoutContent() {
         if (!redirectedToIntended.current && intendedPath && !intendedPath.startsWith('/(auth)') && intendedPath !== '/' && intendedPath !== '/index') {
           redirectedToIntended.current = true;
           router.replace(intendedPath as any);
+        } else if (isAdmin) {
+          router.replace('/(admin)/dashboard' as any);
         } else {
           router.replace('/(tabs)');
         }
