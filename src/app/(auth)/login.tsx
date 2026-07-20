@@ -6,12 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTheme } from '../../theme';
 import { useAuthStore } from '../../store/authStore';
+import { useAdminStore } from '../../store/adminStore';
 import { useToastStore } from '../../store/toastStore';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../api/client';
+import { adminApiClient } from '../../api/adminClient';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -24,6 +26,7 @@ export default function Login() {
   const { colors, spacing, typography, palette, roundness } = useTheme();
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const adminLogin = useAdminStore((state) => state.login);
   const showToast = useToastStore((state) => state.showToast);
 
   const {
@@ -43,8 +46,19 @@ export default function Login() {
       const res = await apiClient.post('/auth/login', { email: data.email, password: data.password });
       const { user, accessToken, refreshToken } = res.data.data;
       await login(user, accessToken, refreshToken);
-      showToast('Logged in successfully!', 'success');
-      router.replace('/(tabs)');
+
+      if (user.role === 'admin') {
+        try {
+          const adminRes = await adminApiClient.post('/admin-auth/login', { email: data.email, password: data.password });
+          const { token, admin } = adminRes.data.data;
+          adminLogin(admin, token);
+        } catch (_) {}
+        showToast('Welcome, Admin!', 'success');
+        router.replace('/(admin)/dashboard' as any);
+      } else {
+        showToast('Logged in successfully!', 'success');
+        router.replace('/(tabs)');
+      }
     } catch (e: any) {
       showToast(e.response?.data?.message ?? e.message ?? 'Login failed. Please check credentials.', 'error');
     }
