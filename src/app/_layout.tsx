@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Capture the intended URL on web before any redirect happens
+// Capture the intended URL on web before any redirect happens — only for non-admin paths
 const intendedPath = Platform.OS === 'web' && typeof window !== 'undefined'
   ? window.location.pathname + window.location.search
   : null;
@@ -31,7 +31,6 @@ function RootLayoutContent() {
   const isLoggedIn = isAuthenticated || !!user;
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
   const [tokensInitialized, setTokensInitialized] = useState(false);
-  const redirectedToIntended = useRef(false);
   const isNavigating = useRef(false);
 
   useEffect(() => {
@@ -70,10 +69,8 @@ function RootLayoutContent() {
     const inAdminGroup = segments[0] === '(admin)';
     const inAppGroup = segments[0] === '(tabs)' || segments[0] === 'create' || segments[0] === 'chat' || segments[0] === 'story' || segments[0] === 'community' || segments[0] === 'krushi-mitra' || segments[0] === 'market-rates';
 
-    // Admin routes: only skip guard if user is actually an admin
-    if (inAdminGroup && isAdmin) return;
-
     if (!isLoggedIn) {
+      // Unauthenticated: send to login regardless of where they are
       if (!inAuthGroup && !isNavigating.current) {
         isNavigating.current = true;
         router.replace(!isOnboarded ? '/(auth)/onboarding' : '/(auth)/login');
@@ -81,15 +78,13 @@ function RootLayoutContent() {
     } else {
       isNavigating.current = false;
       if (isAdmin) {
-        // Always keep admin in the admin group
+        // Admin: must stay in admin group
         if (!inAdminGroup) {
           router.replace('/(admin)/dashboard' as any);
         }
-      } else if (inAuthGroup || !inAppGroup) {
-        if (!redirectedToIntended.current && intendedPath && !intendedPath.startsWith('/(auth)') && intendedPath !== '/' && intendedPath !== '/index') {
-          redirectedToIntended.current = true;
-          router.replace(intendedPath as any);
-        } else {
+      } else {
+        // Regular user: must not be in auth or admin group
+        if (inAuthGroup || inAdminGroup || !inAppGroup) {
           router.replace('/(tabs)');
         }
       }
