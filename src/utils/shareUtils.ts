@@ -26,7 +26,11 @@ export async function shareAppLink(displayName: string, referrerId?: string): Pr
 
   if (Platform.OS !== 'web') {
     try {
-      await Share.share({ message, url: link });
+      // url field is iOS-only — Android crashes if both message and url are passed
+      const content = Platform.OS === 'ios'
+        ? { message, url: link }
+        : { message };
+      await Share.share(content);
       if (referrerId) trackShare(referrerId);
       return true;
     } catch {

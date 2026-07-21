@@ -52,51 +52,57 @@ export default function EventShareSheet({ visible, onClose, eventTitle, shareUrl
       if (Platform.OS === 'web') {
         window.open(url, '_blank');
       } else {
-        await Linking.openURL(url);
+        try {
+          const supported = await Linking.canOpenURL(url);
+          if (supported) await Linking.openURL(url);
+        } catch { /* app not installed */ }
       }
     }
     onClose();
   };
 
+  const SheetContent = (
+    <TouchableOpacity
+      activeOpacity={1}
+      style={[styles.sheet, { backgroundColor: colors.surface }]}
+    >
+      <View style={[styles.handle, { backgroundColor: colors.border }]} />
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Share Event</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <Ionicons name="close" size={22} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+      <Text style={[styles.eventName, { color: colors.textSecondary }]} numberOfLines={2}>
+        {eventTitle}
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionsRow}>
+        {SHARE_OPTIONS.map((opt) => (
+          <TouchableOpacity key={opt.id} style={styles.optionItem} onPress={() => handleShare(opt.id)}>
+            <View style={[styles.optionIcon, { backgroundColor: opt.color + '18', borderColor: opt.color + '30' }]}>
+              <Ionicons name={opt.icon as any} size={24} color={opt.color} />
+            </View>
+            <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>{opt.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </TouchableOpacity>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return (
+      <View style={[StyleSheet.absoluteFillObject, styles.overlay, { zIndex: 999 }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+        {SheetContent}
+      </View>
+    );
+  }
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={[styles.sheet, { backgroundColor: colors.surface }]}
-        >
-          {/* Handle */}
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>Share Event</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Event title preview */}
-          <Text style={[styles.eventName, { color: colors.textSecondary }]} numberOfLines={2}>
-            {eventTitle}
-          </Text>
-
-          {/* Share options grid */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionsRow}>
-            {SHARE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.id}
-                style={styles.optionItem}
-                onPress={() => handleShare(opt.id)}
-              >
-                <View style={[styles.optionIcon, { backgroundColor: opt.color + '18', borderColor: opt.color + '30' }]}>
-                  <Ionicons name={opt.icon as any} size={24} color={opt.color} />
-                </View>
-                <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </TouchableOpacity>
+        {SheetContent}
       </TouchableOpacity>
     </Modal>
   );
