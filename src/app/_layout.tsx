@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, StatusBar, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, StatusBar, Platform, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -32,6 +32,28 @@ function RootLayoutContent() {
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
   const [tokensInitialized, setTokensInitialized] = useState(false);
   const isNavigating = useRef(false);
+  const appState = useRef(AppState.currentState);
+
+  // When app returns from background (killed & reopened from recents),
+  // re-init tokens and redirect to the correct home screen.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = AppState.addEventListener('change', async (nextState) => {
+      if (appState.current.match(/inactive|background/) && nextState === 'active') {
+        await useAuthStore.getState().initSecureTokens();
+        const { isAuthenticated, user } = useAuthStore.getState();
+        const isLoggedIn = isAuthenticated || !!user;
+        const isAdminUser = user?.role?.toUpperCase() === 'ADMIN';
+        if (isLoggedIn) {
+          router.replace(isAdminUser ? '/(admin)/dashboard' as any : '/(tabs)');
+        } else {
+          router.replace('/(auth)/login');
+        }
+      }
+      appState.current = nextState;
+    });
+    return () => sub.remove();
+  }, [router]);
 
   useEffect(() => {
     if (Platform.OS === 'web') {

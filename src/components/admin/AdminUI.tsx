@@ -205,11 +205,13 @@ const es = StyleSheet.create({
 // ── Pagination ────────────────────────────────────────────────────────────────
 interface PaginationProps { skip: number; take: number; total: number; onPage: (skip: number) => void; }
 export function Pagination({ skip, take, total, onPage }: PaginationProps) {
+  const { width: w } = useWindowDimensions();
+  const isNarrow = w < 400;
   const page = Math.floor(skip / take) + 1;
   const pages = Math.ceil(total / take);
   if (pages <= 1) return null;
   return (
-    <View style={pg.wrap}>
+    <View style={[pg.wrap, isNarrow && pg.wrapNarrow]}>
       <Text style={pg.info}>{total.toLocaleString()} records · Page {page} of {pages}</Text>
       <View style={pg.btns}>
         <TouchableOpacity style={[pg.btn, page === 1 && pg.disabled]} onPress={() => onPage(Math.max(0, skip - take))} disabled={page === 1}>
@@ -228,6 +230,7 @@ const pg = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg,
   },
+  wrapNarrow: { flexDirection: 'column', alignItems: 'center', gap: 8 },
   info: { color: C.textMuted, fontSize: 12 },
   btns: { flexDirection: 'row', gap: 8 },
   btn: {
@@ -319,7 +322,10 @@ const mc = StyleSheet.create({
   value: { flex: 1 },
 });
 
-export const IS_MOBILE = Dimensions.get('window').width < 600;
+export function useIsMobile() {
+  const { width } = useWindowDimensions();
+  return width < 600;
+}
 export function LoadingOverlay() {
   return (
     <View style={lo.wrap}>

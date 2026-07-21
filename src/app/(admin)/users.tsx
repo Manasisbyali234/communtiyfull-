@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, Badge, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, Badge, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDateTime } from '../../utils/adminUtils';
 
@@ -25,6 +25,7 @@ export default function AdminUsers() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -155,7 +156,7 @@ export default function AdminUsers() {
           </View>
         </View>
 
-        {IS_MOBILE ? (
+        {isMobile ? (
           <View style={{ padding: 12 }}>{renderMobile()}</View>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>

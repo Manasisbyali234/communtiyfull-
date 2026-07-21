@@ -307,8 +307,9 @@ const s = StyleSheet.create({
   main: { flex: 1 },
   topBarSafe: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   topBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#fff', paddingHorizontal: 18, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 14,
+    overflow: 'hidden',
   },
   menuBtn: { padding: 6, borderRadius: 8 },
   pageTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, letterSpacing: -0.2 },
@@ -321,8 +322,8 @@ const s = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
 
-  bellOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'flex-end', justifyContent: 'flex-start', paddingTop: 60, paddingRight: 12 },
-  bellPanel: { width: 320, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  bellOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'flex-end', justifyContent: 'flex-start', paddingTop: 60, paddingHorizontal: 12 },
+  bellPanel: { width: '100%', maxWidth: 320, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
   bellPanelWide: { marginRight: 8 },
   bellHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   bellTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
