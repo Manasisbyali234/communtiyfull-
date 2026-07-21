@@ -1,26 +1,37 @@
 import React, { useRef, useState, useMemo } from 'react';
 import {
   StyleSheet, Text, View, Pressable,
-  TouchableOpacity, Share, Platform, Modal, Dimensions
+  TouchableOpacity, Share, Platform, Modal, Dimensions,
 } from 'react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_PADDING = 14 * 2 + 12 * 2; // card padding + list horizontal padding
-const MEDIA_HEIGHT = Math.round((SCREEN_WIDTH - CARD_PADDING) * 0.65);
-const GRID_HEIGHT = Math.round((SCREEN_WIDTH - CARD_PADDING) * 0.38);
 import Animated, {
   useSharedValue, useAnimatedStyle,
-  withSpring, withSequence, withDelay, withTiming,
+  withSpring, withSequence, withDelay, withTiming, FadeIn,
+  interpolate, useAnimatedReaction, runOnJS,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme';
 import { Post } from '../../types';
 import Avatar from '../common/Avatar';
 import VideoPostPlayer from '../common/VideoPostPlayer';
-import { Ionicons } from '@expo/vector-icons';
 import { useLikePostMutation, useSavePostMutation } from '../../api/feed';
 import { useToastStore } from '../../store/toastStore';
 import { useRouter } from 'expo-router';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_H_MARGIN = 16;
+const MEDIA_HEIGHT = 300;
+
+// ── Light card constants ──────────────────────────────────────────────────────
+const CARD_BG = '#FFFFFF';
+const CARD_BG_LIGHT = '#F9F9F9';
+const ACCENT_GREEN = '#4CAF50';
+const TEXT_WHITE = '#1A1A1A';
+const TEXT_GRAY = '#333333';
+const TEXT_MUTED = 'rgba(0,0,0,0.45)';
+const DIVIDER = 'rgba(0,0,0,0.08)';
+const ICON_DEFAULT = 'rgba(0,0,0,0.6)';
 
 interface PostCardProps {
   post: Post;
@@ -28,42 +39,115 @@ interface PostCardProps {
   onForwardPress?: (postId: string) => void;
 }
 
+// ── Skeleton shimmer for image loading ──────────────────────────────────────
+const ImageSkeleton: React.FC<{ height: number }> = ({ height }) => {
+  const shimmer = useSharedValue(0);
+
+  React.useEffect(() => {
+    shimmer.value = withSequence(
+      withTiming(1, { duration: 900 }),
+      withTiming(0, { duration: 900 }),
+    );
+    const interval = setInterval(() => {
+      shimmer.value = withSequence(
+        withTiming(1, { duration: 900 }),
+        withTiming(0, { duration: 900 }),
+      );
+    }, 1800);
+    return () => clearInterval(interval);
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(shimmer.value, [0, 1], [0.3, 0.7]),
+  }));
+
+  return (
+    <Animated.View style={[styles.skeleton, { height, borderRadius: 18 }, shimmerStyle]} />
+  );
+};
+
+// ── Action button with press animation ──────────────────────────────────────
+const ActionBtn: React.FC<{
+  icon: string;
+  count?: number;
+  active?: boolean;
+  onPress: () => void;
+}> = ({ icon, count, active, onPress }) => {
+  const scale = useSharedValue(1);
+
+  const handlePress = () => {
+    scale.value = withSequence(
+      withTiming(1.35, { duration: 80 }),
+      withSpring(1, { damping: 5, stiffness: 200 }),
+    );
+    onPress();
+  };
+
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={styles.actionBtn}>
+      <Animated.View style={animStyle}>
+        <Ionicons
+          name={icon as any}
+          size={22}
+          color={active ? ACCENT_GREEN : ICON_DEFAULT}
+        />
+      </Animated.View>
+      {!!count && count > 0 && (
+        <Text style={[styles.actionCount, { color: active ? ACCENT_GREEN : ICON_DEFAULT }]}>
+          {count}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+// ── Main PostCard ────────────────────────────────────────────────────────────
 export const PostCard: React.FC<PostCardProps> = React.memo(({ post, onCommentPress, onForwardPress }) => {
-  const { colors, typography, isDark } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
   const likeMutation = useLikePostMutation();
   const saveMutation = useSavePostMutation();
-  const showToast = useToastStore((state) => state.showToast);
+  const showToast = useToastStore((s) => s.showToast);
 
   const lastTapRef = useRef<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const moreBtnRef = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const moreBtnRef = useRef<View>(null);
 
-  // Earthy green accent – community brand
-  const G = colors.primary;
-  const CARD = colors.surface;
-  const TEXT = colors.text;
-  const TEXT2 = colors.textSecondary;
-  const TEXT3 = colors.textMuted;
-  const BORDER = colors.border;
-
-  const shouldShowReadMore = post.content.length > 120 || post.content.split('\n').length > 2;
-
-  // ── Animations ────────────────────────────────────────────────────────
+  // Animations
   const heartScale = useSharedValue(0);
   const heartOpacity = useSharedValue(0);
-  const iconScale = useSharedValue(1);
+  const imageScale = useSharedValue(1);
+  const cardOpacity = useSharedValue(0);
 
-  const triggerDoubleTapAnimation = () => {
+  // Card fade-in on mount
+  React.useEffect(() => {
+    cardOpacity.value = withTiming(1, { duration: 400 });
+  }, []);
+
+  const cardStyle = useAnimatedStyle(() => ({ opacity: cardOpacity.value }));
+
+  const heartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+    opacity: heartOpacity.value,
+  }));
+
+  const imageAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: imageScale.value }],
+  }));
+
+  const triggerDoubleTapHeart = () => {
     heartScale.value = withSequence(
-      withSpring(1.3, { damping: 8, stiffness: 120 }),
-      withDelay(350, withSpring(0, { damping: 10 }))
+      withSpring(1.4, { damping: 6, stiffness: 120 }),
+      withDelay(400, withSpring(0, { damping: 10 })),
     );
     heartOpacity.value = withSequence(
-      withTiming(0.9, { duration: 150 }),
-      withDelay(350, withTiming(0, { duration: 200 }))
+      withTiming(1, { duration: 120 }),
+      withDelay(400, withTiming(0, { duration: 200 })),
     );
   };
 
@@ -71,338 +155,410 @@ export const PostCard: React.FC<PostCardProps> = React.memo(({ post, onCommentPr
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       if (!post.isLiked) likeMutation.mutate(post.id);
-      triggerDoubleTapAnimation();
+      triggerDoubleTapHeart();
     }
     lastTapRef.current = now;
   };
 
-  const handleLikePress = () => {
-    iconScale.value = withSequence(
-      withTiming(1.35, { duration: 90 }),
-      withSpring(1, { damping: 5 })
-    );
-    likeMutation.mutate(post.id);
+  const handleImagePressIn = () => {
+    imageScale.value = withTiming(1.03, { duration: 200 });
   };
 
-  const handleSavePress = () => {
+  const handleImagePressOut = () => {
+    imageScale.value = withSpring(1, { damping: 8 });
+  };
+
+  const handleLike = () => likeMutation.mutate(post.id);
+  const handleComment = () => onCommentPress(post.id);
+  const handleSave = () => {
     saveMutation.mutate(post.id);
     showToast(post.isBookmarked ? 'Removed from saved.' : 'Post saved!', 'success');
   };
-
   const handleShare = async () => {
     if (onForwardPress) {
       onForwardPress(post.id);
     } else {
       try {
         await Share.share({
-          message: `${post.author.displayName} in ${post.community?.name || 'Community'}: "${post.content}"`,
+          message: `${post.author.displayName}: "${post.content}"`,
         });
       } catch (_) {}
     }
   };
 
-  const navigateToCommunity = () => {
-    if (post.community) router.push(`/community/${post.community.id}`);
-  };
-
-  const navigateToAuthor = () => {
-    router.push(`/user/${post.author.id}` as any);
-  };
-
   const handleMorePress = () => {
-    moreBtnRef.current?.measureInWindow((x, y, width, height) => {
-      setMenuPos({ top: y + height + 4, right: 0 });
+    moreBtnRef.current?.measureInWindow((x, y, w, h) => {
+      setMenuPos({ top: y + h + 4, right: 0 });
       setMenuVisible(true);
     });
   };
 
-  const handleReport = () => {
-    setMenuVisible(false);
-    showToast('Post reported. Thank you for keeping the community safe.', 'info');
+  const navigateToCommunity = () => {
+    if (post.community) router.push(`/community/${post.community.id}`);
   };
-
-  const parsedContent = useMemo(() => {
-    return post.content.split(/([\s]+)/).map((part, i) => {
-      if (part.startsWith('#'))
-        return <Text key={i} style={{ color: G, fontWeight: '700' }}>{part}</Text>;
-      if (part.startsWith('@'))
-        return <Text key={i} style={{ color: G, fontWeight: '600' }}>{part}</Text>;
-      return part;
-    });
-  }, [post.content, G]);
-
-  const animatedHeartStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-    opacity: heartOpacity.value,
-  }));
-
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: iconScale.value }],
-  }));
+  const navigateToAuthor = () => router.push(`/user/${post.author.id}` as any);
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(mins / 60);
     const days = Math.floor(hours / 24);
-    if (mins < 60) return `${mins}m`;
-    if (hours < 24) return `${hours}h`;
-    return `${days}d`;
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
   };
 
+  const parsedContent = useMemo(() => {
+    return post.content.split(/([\s]+)/).map((part, i) => {
+      if (part.startsWith('#'))
+        return <Text key={i} style={{ color: ACCENT_GREEN, fontWeight: '700' }}>{part}</Text>;
+      if (part.startsWith('@'))
+        return <Text key={i} style={{ color: ACCENT_GREEN, fontWeight: '600' }}>{part}</Text>;
+      return part;
+    });
+  }, [post.content]);
+
+  const hasMedia = !!(post.videoUrl || post.mediaUrl || (post.images && post.images.length > 0));
+  const isVideo = post.videoUrl || post.mediaType === 'video' || post.mediaType === 'VIDEO';
+  const mediaUri = post.mediaUrl || (post.images && post.images[0]);
+  const shouldShowReadMore = post.content.length > 120 || post.content.split('\n').length > 2;
+
   return (
-    <View style={[styles.card, { backgroundColor: CARD, borderColor: BORDER }]}>
-      {/* ── Header ───────────────────────────────────────────────────────── */}
+    <Animated.View style={[styles.card, cardStyle]}>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity activeOpacity={0.8} onPress={post.community ? navigateToCommunity : navigateToAuthor} style={styles.avatarWrapper}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={post.community ? navigateToCommunity : navigateToAuthor}
+          style={styles.avatarWrap}
+        >
           <Avatar
             url={post.community?.avatarUrl || post.author.avatarUrl}
             name={post.community?.name || post.author.displayName}
-            size={44}
+            size={48}
             gradientBorder={post.community?.isJoined === false}
           />
-          {/* Author mini-avatar overlay */}
           {post.community && (
-            <TouchableOpacity onPress={navigateToAuthor} style={[styles.authorAvatarBadge, { borderColor: CARD }]}>
+            <TouchableOpacity
+              onPress={navigateToAuthor}
+              style={styles.authorBadge}
+            >
               <Avatar url={post.author.avatarUrl} name={post.author.displayName} size={18} />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
 
-        <View style={styles.headerText}>
+        <View style={styles.headerMeta}>
           <TouchableOpacity activeOpacity={0.8} onPress={post.community ? navigateToCommunity : navigateToAuthor}>
-            <Text style={[styles.displayName, { color: TEXT }]}>
+            <Text style={styles.displayName} numberOfLines={1}>
               {post.community?.name || post.author.displayName}
             </Text>
           </TouchableOpacity>
           <View style={styles.metaRow}>
             {post.community && (
               <TouchableOpacity onPress={navigateToAuthor}>
-                <Text style={[styles.authorName, { color: TEXT3 }]}>
-                  {post.author.displayName} ·{' '}
-                </Text>
+                <Text style={styles.authorName}>{post.author.displayName} · </Text>
               </TouchableOpacity>
             )}
-            <Text style={[styles.time, { color: TEXT3 }]}>{timeAgo(post.createdAt)}</Text>
+            <Text style={styles.timeText}>{timeAgo(post.createdAt)}</Text>
           </View>
         </View>
 
         <View ref={moreBtnRef} collapsable={false}>
-          <Pressable 
-            style={({ pressed }) => [styles.moreBtn, { opacity: pressed ? 0.5 : 1 }]} 
+          <Pressable
+            style={({ pressed }) => [styles.moreBtn, { opacity: pressed ? 0.5 : 1 }]}
             onPress={handleMorePress}
           >
-            <Ionicons name="ellipsis-horizontal" size={20} color={TEXT3} />
+            <Ionicons name="ellipsis-horizontal" size={20} color={ICON_DEFAULT} />
           </Pressable>
         </View>
 
         <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
-            <View style={[styles.dropdown, { backgroundColor: CARD, borderColor: BORDER, top: menuPos.top, right: 16 }]}>
-              <Pressable style={styles.dropdownItem} onPress={handleReport}>
-                <Ionicons name="flag-outline" size={16} color="#E53935" />
-                <Text style={[styles.dropdownText, { color: '#E53935' }]}>Report Post</Text>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuVisible(false)}>
+            <View style={[styles.dropdown, { top: menuPos.top, right: 16 }]}>
+              <Pressable style={styles.dropdownItem} onPress={() => {
+                setMenuVisible(false);
+                showToast('Post reported. Thank you!', 'info');
+              }}>
+                <Ionicons name="flag-outline" size={16} color="#EF5350" />
+                <Text style={[styles.dropdownText, { color: '#EF5350' }]}>Report Post</Text>
               </Pressable>
               <Pressable style={styles.dropdownItem} onPress={() => setMenuVisible(false)}>
-                <Ionicons name="close-outline" size={16} color={TEXT3} />
-                <Text style={[styles.dropdownText, { color: TEXT3 }]}>Cancel</Text>
+                <Ionicons name="close-outline" size={16} color={TEXT_GRAY} />
+                <Text style={[styles.dropdownText, { color: TEXT_GRAY }]}>Cancel</Text>
               </Pressable>
             </View>
           </Pressable>
         </Modal>
       </View>
 
-      {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <View style={styles.body}>
+      {/* ── Media ──────────────────────────────────────────────────────── */}
+      {hasMedia && (
+        <Pressable
+          onPress={handleDoubleTap}
+          onPressIn={handleImagePressIn}
+          onPressOut={handleImagePressOut}
+          style={styles.mediaWrapper}
+        >
+          <Animated.View style={[styles.mediaInner, imageAnimStyle]}>
+            {!imageLoaded && !isVideo && <ImageSkeleton height={MEDIA_HEIGHT} />}
+            {isVideo ? (
+              <VideoPostPlayer url={post.videoUrl || post.mediaUrl!} />
+            ) : post.images && post.images.length > 1 ? (
+              <View style={styles.imageGrid}>
+                {post.images.slice(0, 4).map((uri, i) => (
+                  <Image
+                    key={i}
+                    source={{ uri }}
+                    style={styles.gridImg}
+                    contentFit="cover"
+                    transition={300}
+                  />
+                ))}
+              </View>
+            ) : (
+              <Image
+                source={{ uri: mediaUri }}
+                style={styles.media}
+                contentFit="cover"
+                transition={400}
+                onLoad={() => setImageLoaded(true)}
+              />
+            )}
+
+            {/* Bottom gradient overlay */}
+            {!isVideo && (
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.55)']}
+                style={styles.mediaGradient}
+                pointerEvents="none"
+              />
+            )}
+          </Animated.View>
+
+          {/* Double-tap heart */}
+          <Animated.View style={[styles.heartOverlay, heartStyle]}>
+            <Ionicons name="heart" size={90} color="rgba(255,255,255,0.95)" />
+          </Animated.View>
+        </Pressable>
+      )}
+
+      {/* ── Content ────────────────────────────────────────────────────── */}
+      <View style={styles.content}>
+        {/* Tags */}
+        {post.tags && post.tags.length > 0 && (
+          <View style={styles.tagsRow}>
+            {post.tags.slice(0, 3).map((tag, i) => (
+              <View key={i} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Post text */}
         <Text
-          style={[styles.bodyText, { color: TEXT2 }]}
+          style={styles.bodyText}
           numberOfLines={isExpanded ? undefined : 3}
         >
           {parsedContent}
         </Text>
         {shouldShowReadMore && !isExpanded && (
           <TouchableOpacity onPress={() => setIsExpanded(true)} style={{ marginTop: 4 }}>
-            <Text style={{ color: G, fontWeight: '700', fontSize: 13 }}>Read more</Text>
+            <Text style={styles.readMore}>Read more</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Community / location chip */}
+        {post.community && (
+          <TouchableOpacity onPress={navigateToCommunity} style={styles.communityChip}>
+            <Ionicons name="people-outline" size={12} color={TEXT_MUTED} />
+            <Text style={styles.communityChipText}>{post.community.name}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* ── Tags ─────────────────────────────────────────────────────────── */}
-      {post.tags && post.tags.length > 0 && (
-        <View style={styles.tagsRow}>
-          {post.tags.slice(0, 3).map((tag, i) => (
-            <View key={i} style={[styles.tagChip, { backgroundColor: colors.primaryContainer }]}>
-              <Text style={[styles.tagText, { color: colors.primaryDark }]}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* ── Divider ────────────────────────────────────────────────────── */}
+      <View style={styles.divider} />
 
-      {/* ── Media ────────────────────────────────────────────────────────── */}
-      {(post.videoUrl || post.mediaUrl || (post.images && post.images.length > 0)) && (
-        <Pressable onPress={handleDoubleTap}>
-          <View style={post.images && post.images.length > 0 ? styles.imageGrid : styles.mediaContainer}>
-            {post.images && post.images.length > 0 ? (
-              post.images.map((uri, i) => (
-                <Image key={i} source={{ uri }} style={styles.gridImg} contentFit="cover" transition={300} />
-              ))
-            ) : post.videoUrl ? (
-              <VideoPostPlayer url={post.videoUrl} />
-            ) : post.mediaType === 'video' || post.mediaType === 'VIDEO' ? (
-              <VideoPostPlayer url={post.mediaUrl!} />
-            ) : (
-              <Image
-                source={{ uri: post.mediaUrl }}
-                style={styles.media}
-                contentFit="cover"
-                transition={300}
-              />
-            )}
-
-            {/* Double-tap heart overlay */}
-            <Animated.View style={[styles.heartOverlay, animatedHeartStyle]}>
-              <Ionicons name="heart" size={90} color="rgba(255,255,255,0.95)" />
-            </Animated.View>
-          </View>
-        </Pressable>
-      )}
-
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <View style={[styles.footer, { borderTopColor: colors.borderSecondary }]}>
-        {/* Like (heart) */}
-        <TouchableOpacity onPress={handleLikePress} activeOpacity={0.7} style={styles.actionBtn}>
-          <Animated.View style={animatedIconStyle}>
-            <Ionicons
-              name={post.isLiked ? 'heart' : 'heart-outline'}
-              size={22}
-              color={post.isLiked ? '#E53935' : TEXT3}
-            />
-          </Animated.View>
-          {post.likesCount > 0 && (
-            <Text style={[styles.actionText, { color: post.isLiked ? '#E53935' : TEXT3 }]}>
-              {post.likesCount}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Comment */}
-        <TouchableOpacity
-          onPress={() => onCommentPress(post.id)}
-          activeOpacity={0.7}
-          style={styles.actionBtn}
-        >
-          <Ionicons name="chatbubble-outline" size={19} color={TEXT3} />
-          {post.commentsCount > 0 && (
-            <Text style={[styles.actionText, { color: TEXT3 }]}>{post.commentsCount}</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Share */}
-        <TouchableOpacity onPress={handleShare} activeOpacity={0.7} style={styles.actionBtn}>
-          <Ionicons name="arrow-redo-outline" size={19} color={TEXT3} />
-        </TouchableOpacity>
-
+      {/* ── Reaction Row ───────────────────────────────────────────────── */}
+      <View style={styles.footer}>
+        <ActionBtn
+          icon={post.isLiked ? 'heart' : 'heart-outline'}
+          count={post.likesCount}
+          active={post.isLiked}
+          onPress={handleLike}
+        />
+        <ActionBtn
+          icon="chatbubble-outline"
+          count={post.commentsCount}
+          onPress={handleComment}
+        />
+        <ActionBtn
+          icon="arrow-redo-outline"
+          onPress={handleShare}
+        />
         <View style={{ flex: 1 }} />
-
-        {/* Bookmark */}
-        <TouchableOpacity onPress={handleSavePress} activeOpacity={0.7} style={styles.actionBtn}>
-          <Ionicons
-            name={post.isBookmarked ? 'bookmark' : 'bookmark-outline'}
-            size={20}
-            color={post.isBookmarked ? G : TEXT3}
-          />
-        </TouchableOpacity>
+        <ActionBtn
+          icon={post.isBookmarked ? 'bookmark' : 'bookmark-outline'}
+          active={post.isBookmarked}
+          onPress={handleSave}
+        />
       </View>
-    </View>
+    </Animated.View>
   );
 });
 
 const styles = StyleSheet.create({
-  // M3 Elevated Card
+  // ── Card ──────────────────────────────────────────────────────────────────
   card: {
-    marginBottom: 10,
-    borderRadius: 20,
-    padding: 14,
+    backgroundColor: CARD_BG,
+    borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 20,
+    marginHorizontal: CARD_H_MARGIN,
+    padding: 16,
     ...Platform.select({
       ios: {
-        shadowColor: '#1A2D1A',
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
       },
-      android: { elevation: 2 },
-      web: { boxShadow: '0px 2px 10px rgba(26, 45, 26, 0.06)' } as any,
+      android: { elevation: 4 },
+      web: { boxShadow: '0px 2px 12px rgba(0,0,0,0.1)' } as any,
     }),
   },
 
-  // Header
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
-  avatarWrapper: { position: 'relative' },
-  authorAvatarBadge: {
-    position: 'absolute', bottom: -2, right: -2,
-    borderRadius: 12, borderWidth: 2, overflow: 'hidden',
+  // ── Header ────────────────────────────────────────────────────────────────
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
   },
-  headerText: { flex: 1 },
-  displayName: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  authorName: { fontSize: 12, fontWeight: '400' },
-  time: { fontSize: 12, fontWeight: '400' },
-  communityChip: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 20,
+  avatarWrap: { position: 'relative' },
+  authorBadge: {
+    position: 'absolute',
+    bottom: -2, right: -2,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
   },
-  communityChipText: { fontSize: 11, fontWeight: '700' },
+  headerMeta: { flex: 1 },
+  displayName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: TEXT_WHITE,
+    letterSpacing: -0.3,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  authorName: { fontSize: 13, color: TEXT_MUTED, fontWeight: '400' },
+  timeText: { fontSize: 13, color: TEXT_MUTED, fontWeight: '400' },
   moreBtn: { padding: 6, borderRadius: 20 },
-  modalOverlay: { flex: 1 },
+
+  // ── Dropdown ──────────────────────────────────────────────────────────────
   dropdown: {
     position: 'absolute',
-    borderRadius: 12, borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 4, minWidth: 160,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    paddingVertical: 4,
+    minWidth: 160,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 } as any,
-      android: { elevation: 8 },
-      web: { boxShadow: '0 4px 16px rgba(0,0,0,0.15)' } as any,
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12 },
+      android: { elevation: 12 },
     }),
   },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  dropdownItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 11,
+  },
   dropdownText: { fontSize: 14, fontWeight: '600' },
 
-  // Body
-  body: { marginBottom: 10 },
-  bodyText: { fontSize: 15, lineHeight: 22, fontWeight: '400', letterSpacing: -0.1 },
-
-  // Tags
-  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  tagChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  tagText: { fontSize: 12, fontWeight: '700' },
-
-  // Media
-  mediaContainer: {
-    width: '100%', height: MEDIA_HEIGHT,
-    borderRadius: 16, overflow: 'hidden',
-    marginBottom: 12, position: 'relative',
+  // ── Media ─────────────────────────────────────────────────────────────────
+  mediaWrapper: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginTop: 2,
+    marginBottom: 14,
+    position: 'relative',
   },
-  media: { width: '100%', height: '100%' },
-  imageGrid: { flexDirection: 'row', height: GRID_HEIGHT, gap: 4, marginBottom: 12 },
-  gridImg: { flex: 1, borderRadius: 12 },
-  heartOverlay: {
+  mediaInner: { width: '100%' },
+  media: { width: '100%', height: MEDIA_HEIGHT },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    height: MEDIA_HEIGHT,
+    gap: 3,
+  },
+  gridImg: { flex: 1, minWidth: '48%', borderRadius: 10 },
+  mediaGradient: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center', justifyContent: 'center',
+    bottom: 0, left: 0, right: 0,
+    height: 100,
+  },
+  heartOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skeleton: {
+    backgroundColor: '#E0E0E0',
+    width: '100%',
   },
 
-  // Footer
+  // ── Content ───────────────────────────────────────────────────────────────
+  content: { gap: 8 },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tagChip: {
+    backgroundColor: 'rgba(76,175,80,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  tagText: { fontSize: 12, fontWeight: '700', color: ACCENT_GREEN },
+  bodyText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: TEXT_GRAY,
+    fontWeight: '400',
+    letterSpacing: -0.1,
+  },
+  readMore: { color: ACCENT_GREEN, fontWeight: '700', fontSize: 13 },
+  communityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
+  },
+  communityChipText: { fontSize: 12, color: TEXT_MUTED, fontWeight: '500' },
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  divider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+    marginVertical: 12,
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 6,
+    gap: 4,
   },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 4 },
-  actionText: { fontSize: 13, fontWeight: '700' },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  actionCount: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
 
 export default PostCard;

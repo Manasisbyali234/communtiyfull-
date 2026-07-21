@@ -345,7 +345,7 @@ export default function HomeFeed() {
               <Text style={{ color: colors.textMuted, marginTop: 12, fontSize: 15 }}>No posts yet. Join a community to see posts!</Text>
             </View>
           }
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 40, paddingTop: 8 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
           onScroll={(e) => scrollY.setValue(e.nativeEvent.contentOffset.y)}
           scrollEventThrottle={16}
