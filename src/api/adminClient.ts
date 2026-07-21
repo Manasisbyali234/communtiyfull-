@@ -8,7 +8,13 @@ export const adminApiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-adminApiClient.interceptors.request.use((config) => {
+adminApiClient.interceptors.request.use(async (config) => {
+  if (!useAdminStore.persist.hasHydrated()) {
+    await new Promise<void>((resolve) => {
+      const unsub = useAdminStore.persist.onFinishHydration(() => { unsub(); resolve(); });
+      setTimeout(resolve, 300);
+    });
+  }
   const token = useAdminStore.getState().token;
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;

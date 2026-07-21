@@ -38,8 +38,16 @@ function RootLayoutContent() {
   // re-init tokens and redirect to the correct home screen.
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    let lastBackground = 0;
     const sub = AppState.addEventListener('change', async (nextState) => {
       if (appState.current.match(/inactive|background/) && nextState === 'active') {
+        // Only redirect if the app was truly backgrounded (not just a brief inactive
+        // from a permission dialog or system overlay — require >1.5s in background)
+        const now = Date.now();
+        if (now - lastBackground < 1500) {
+          appState.current = nextState;
+          return;
+        }
         await useAuthStore.getState().initSecureTokens();
         const { isAuthenticated, user } = useAuthStore.getState();
         const isLoggedIn = isAuthenticated || !!user;
@@ -50,6 +58,7 @@ function RootLayoutContent() {
           router.replace('/(auth)/login');
         }
       }
+      if (nextState.match(/inactive|background/)) lastBackground = Date.now();
       appState.current = nextState;
     });
     return () => sub.remove();

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, Badge, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, Badge, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDateTime } from '../../utils/adminUtils';
 
@@ -17,6 +17,7 @@ const COLS: { label: string; style: object }[] = [
 ];
 
 export default function AdminReports() {
+  const isMobile = useIsMobile();
   const [reports, setReports] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -58,7 +59,7 @@ export default function AdminReports() {
           </View>
         </View>
 
-        {IS_MOBILE ? (
+        {isMobile ? (
           <View style={{ padding: 12 }}>
             {loading ? <Skeleton rows={6} /> : reports.length === 0 ? <EmptyState /> : (
               reports.map((r) => (

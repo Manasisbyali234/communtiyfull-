@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, ScrollView } from 'react-native';
+import { View, Text, Image, ScrollView, Alert, Platform } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, Badge, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, Badge, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDateTime } from '../../utils/adminUtils';
 
@@ -18,6 +18,7 @@ const COLS: { label: string; style: object }[] = [
 ];
 
 export default function AdminStories() {
+  const isMobile = useIsMobile();
   const [stories, setStories] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -37,10 +38,10 @@ export default function AdminStories() {
   useEffect(() => { setSkip(0); }, [q]);
   useEffect(() => { load(); }, [load]);
 
-  const del = async (id: string) => {
-    if (!confirm('Delete this story?')) return;
-    await adminApiClient.delete(`/admin-panel/stories/${id}`);
-    load();
+  const del = (id: string) => {
+    const doDelete = async () => { await adminApiClient.delete(`/admin-panel/stories/${id}`); load(); };
+    if (Platform.OS === 'web') { if (window.confirm('Delete this story?')) doDelete(); }
+    else Alert.alert('Delete Story', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: doDelete }]);
   };
 
   return (
@@ -50,7 +51,7 @@ export default function AdminStories() {
           <SearchBar value={q} onChangeText={setQ} placeholder="Search by user…" />
         </View>
 
-        {IS_MOBILE ? (
+        {isMobile ? (
           <View style={{ padding: 12 }}>
             {loading ? <Skeleton rows={6} /> : stories.length === 0 ? <EmptyState /> : (
               stories.map((s) => {

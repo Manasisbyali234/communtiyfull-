@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDate, fmtDateTime } from '../../utils/adminUtils';
 import { getApiBaseUrl } from '../../api/config';
@@ -42,6 +42,8 @@ export default function AdminEvents() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
   const [loading, setLoading] = useState(true);
 
+  const isMobile = useIsMobile();
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -68,9 +70,18 @@ export default function AdminEvents() {
   };
 
   const del = async (id: string) => {
-    if (!confirm('Delete this event?')) return;
-    await adminApiClient.delete(`/admin-panel/events/${id}`);
-    load();
+    const doDelete = async () => {
+      await adminApiClient.delete(`/admin-panel/events/${id}`);
+      load();
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this event?')) doDelete();
+    } else {
+      Alert.alert('Delete Event', 'Are you sure?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   return (
@@ -91,7 +102,7 @@ export default function AdminEvents() {
           </View>
         </View>
 
-        {IS_MOBILE ? (
+        {isMobile ? (
           <View style={{ padding: 12 }}>
             {loading ? <Skeleton rows={6} /> : events.length === 0 ? <EmptyState /> : (
               events.map((e) => (

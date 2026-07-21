@@ -6,7 +6,6 @@ import {
   Animated,
   Dimensions, Platform,
   ScrollView,
-  Share,
   StyleSheet, Text,
   TouchableOpacity,
   View,
@@ -25,7 +24,7 @@ import { useEventsQuery } from '../../api/event';
 import { apiClient } from '../../api/client';
 import { useUnreadCountQuery } from '../../api/chat';
 import { useMyConnectionCountQuery, useConnectionSocket } from '../../api/connections';
-import { shareUrl } from '../../utils/shareUtils';
+import { shareAppLink } from '../../utils/shareUtils';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -193,14 +192,11 @@ export default function ProfileScreen() {
   };
 
   const handleShare = useCallback(async () => {
-    const base = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
-    const link = user?.id ? `${base}/user/${user.id}?ref=${user.id}` : `${base}/profile`;
-    const ok = await shareUrl(
-      `Check out ${user?.displayName || 'User'}'s profile on GowdaCommunity! ${link}`,
-      link,
-      user?.id
+    const ok = await shareAppLink(user?.displayName || 'A friend', user?.id);
+    showToast(
+      ok ? 'App link copied! Share it to invite friends.' : 'Could not share',
+      ok ? 'success' : 'error'
     );
-    showToast(ok ? 'Link copied to clipboard!' : 'Could not share profile', ok ? 'success' : 'error');
   }, [user, showToast]);
 
   const handleMessage = () => {
@@ -218,58 +214,11 @@ export default function ProfileScreen() {
   };
 
   const handleInviteFamily = useCallback(async () => {
-    const inviteMessage = `Hey! ${user?.displayName || 'I'} is inviting you to join the GowdaCommunity app. Connect with family and community members, stay updated on events, and more! Download the app and join our family network.`;
-
-    if (Platform.OS !== 'web') {
-      // Native iOS / Android — use React Native Share sheet
-      try {
-        await Share.share({ message: inviteMessage });
-      } catch (e) {
-        showToast('Could not send invite', 'error');
-      }
-      return;
-    }
-
-    // Web — try modern navigator.share (HTTPS only), then clipboard API,
-    // then fall back to execCommand which works on any HTTP origin
-    try {
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: 'Join GowdaCommunity', text: inviteMessage });
-        return;
-      }
-    } catch (_) {
-      // navigator.share rejected (e.g. user dismissed) — fall through to clipboard
-    }
-
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(inviteMessage);
-        showToast('Invite message copied to clipboard!', 'success');
-        return;
-      }
-    } catch (_) {
-      // clipboard API unavailable on HTTP — fall through to execCommand
-    }
-
-    // Last resort: execCommand works on plain HTTP (including local IP dev servers)
-    try {
-      const el = document.createElement('textarea');
-      el.value = inviteMessage;
-      el.style.position = 'fixed';
-      el.style.opacity = '0';
-      document.body.appendChild(el);
-      el.focus();
-      el.select();
-      const success = document.execCommand('copy');
-      document.body.removeChild(el);
-      if (success) {
-        showToast('Invite message copied to clipboard!', 'success');
-      } else {
-        showToast('Could not copy invite message', 'error');
-      }
-    } catch (e) {
-      showToast('Could not send invite', 'error');
-    }
+    const ok = await shareAppLink(user?.displayName || 'A friend', user?.id);
+    showToast(
+      ok ? 'Invite link shared!' : 'Could not send invite',
+      ok ? 'success' : 'error'
+    );
   }, [user, showToast]);
 
   const G = colors.primary;

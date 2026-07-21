@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Image, ScrollView } from 'react-native';
+import { View, Text, Image, ScrollView, Alert, Platform } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, ActionBtn, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDate } from '../../utils/adminUtils';
 
@@ -33,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminCommunities() {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
 
   // All communities state
@@ -69,24 +70,21 @@ export default function AdminCommunities() {
   useEffect(() => { loadAll(); }, [loadAll]);
   useEffect(() => { loadPending(); }, [loadPending]);
 
-  const del = async (id: string) => {
-    if (!confirm('Delete this community?')) return;
-    await adminApiClient.delete(`/admin-panel/communities/${id}`);
-    loadAll();
-    loadPending();
+  const del = (id: string) => {
+    const doDelete = async () => { await adminApiClient.delete(`/admin-panel/communities/${id}`); loadAll(); loadPending(); };
+    if (Platform.OS === 'web') { if (window.confirm('Delete this community?')) doDelete(); }
+    else Alert.alert('Delete Community', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: doDelete }]);
   };
 
   const approve = async (id: string) => {
     await adminApiClient.put(`/admin-panel/communities/${id}/approve`);
-    loadPending();
-    loadAll();
+    loadPending(); loadAll();
   };
 
-  const reject = async (id: string) => {
-    if (!confirm('Reject this community request?')) return;
-    await adminApiClient.put(`/admin-panel/communities/${id}/reject`);
-    loadPending();
-    loadAll();
+  const reject = (id: string) => {
+    const doReject = async () => { await adminApiClient.put(`/admin-panel/communities/${id}/reject`); loadPending(); loadAll(); };
+    if (Platform.OS === 'web') { if (window.confirm('Reject this community request?')) doReject(); }
+    else Alert.alert('Reject Community', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Reject', style: 'destructive', onPress: doReject }]);
   };
 
   const tabStyle = (active: boolean) => ({
@@ -111,7 +109,7 @@ export default function AdminCommunities() {
 
       {tab === 'pending' && (
         <SectionCard>
-          {IS_MOBILE ? (
+          {isMobile ? (
             <View style={{ padding: 12 }}>
               {pendingLoading ? <Skeleton rows={4} /> : pending.length === 0 ? (
                 <EmptyState />
@@ -194,7 +192,7 @@ export default function AdminCommunities() {
             <SearchBar value={q} onChangeText={setQ} placeholder="Search communities…" />
           </View>
 
-          {IS_MOBILE ? (
+          {isMobile ? (
             <View style={{ padding: 12 }}>
               {loading ? <Skeleton rows={6} /> : communities.length === 0 ? <EmptyState /> : (
                 communities.map((c) => (

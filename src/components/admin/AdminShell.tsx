@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Modal, Pressable, SafeAreaView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useSegments } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAdminStore } from '../../store/adminStore';
@@ -7,6 +8,18 @@ import { useAuthStore } from '../../store/authStore';
 import { adminApiClient } from '../../api/adminClient';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
+
+// On web, avoid react-native-web Modal (portal removeChild crash).
+// Use a plain absolutely-positioned overlay instead.
+function WebOverlay({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!visible) return null;
+  return (
+    <View style={[StyleSheet.absoluteFillObject, { zIndex: 999 }]}>
+      <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+      {children}
+    </View>
+  );
+}
 
 const NAV_MAIN: { label: string; icon: FeatherIconName; key: string }[] = [
   { label: 'Dashboard',       icon: 'layout',       key: 'dashboard' },
@@ -34,6 +47,12 @@ export default function AdminShell({ children, title }: Props) {
   const currentKey = segments[segments.length - 1] ?? '';
   const { width: screenW } = useWindowDimensions();
   const isWide = Platform.OS === 'web' && screenW >= 768;
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === 'web' ? 0 : insets.top;
+
+  useEffect(() => {
+    if (isWide) { setMenuOpen(false); setBellOpen(false); }
+  }, [isWide]);
 
   const fetchPending = useCallback(async () => {
     try {
@@ -122,8 +141,26 @@ export default function AdminShell({ children, title }: Props) {
         </View>
       )}
 
-      {/* Drawer — mobile / narrow */}
-      {!isWide && (
+      {/* Drawer — web uses View overlay, native uses Modal */}
+      {Platform.OS === 'web' ? (
+        <WebOverlay visible={!isWide && menuOpen} onClose={() => setMenuOpen(false)}>
+          <View style={s.modalContainer}>
+            <SafeAreaView style={s.drawer}>
+              <View style={s.logoRow}>
+                <View style={s.logoIcon}>
+                  <Feather name="shield" size={14} color="#16A34A" />
+                </View>
+                <Text style={s.logoTitle}>Admin Panel</Text>
+              </View>
+              <Text style={s.adminSub}>{admin?.displayName ?? 'Admin'}</Text>
+              <View style={{ flex: 1, marginTop: 8 }}>
+                <SidebarContent />
+              </View>
+            </SafeAreaView>
+            <Pressable style={s.overlay} onPress={() => setMenuOpen(false)} />
+          </View>
+        </WebOverlay>
+      ) : (
         <Modal visible={menuOpen} transparent animationType="slide" onRequestClose={() => setMenuOpen(false)}>
           <View style={s.modalContainer}>
             <SafeAreaView style={s.drawer}>
@@ -144,7 +181,7 @@ export default function AdminShell({ children, title }: Props) {
       )}
 
       <View style={s.main}>
-        <SafeAreaView style={s.topBarSafe}>
+        <View style={[s.topBarSafe, { paddingTop: topPad }]}>
           <View style={s.topBar}>
             {!isWide && (
               <TouchableOpacity onPress={() => setMenuOpen(true)} style={s.menuBtn}>
@@ -161,17 +198,18 @@ export default function AdminShell({ children, title }: Props) {
               )}
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
 
         <ScrollView style={s.content} contentContainerStyle={s.contentInner}>
           {children}
         </ScrollView>
       </View>
 
-      {/* Bell Notification Dropdown */}
-      <Modal visible={bellOpen} transparent animationType="fade" onRequestClose={() => setBellOpen(false)}>
-        <Pressable style={s.bellOverlay} onPress={() => setBellOpen(false)}>
-          <Pressable style={[s.bellPanel, isWide && s.bellPanelWide]} onPress={(e) => e.stopPropagation()}>
+      {/* Bell Notification Dropdown — web uses View overlay, native uses Modal */}
+      {Platform.OS === 'web' ? (
+        <WebOverlay visible={bellOpen} onClose={() => setBellOpen(false)}>
+          <View style={s.bellOverlay}>
+            <Pressable style={[s.bellPanel, isWide && s.bellPanelWide]} onPress={(e) => e.stopPropagation()}>
             <View style={s.bellHeader}>
               <Text style={s.bellTitle}>Pending Approvals</Text>
               <TouchableOpacity onPress={() => setBellOpen(false)}>
@@ -239,9 +277,65 @@ export default function AdminShell({ children, title }: Props) {
                 </TouchableOpacity>
               </View>
             )}
+            </Pressable>
+          </View>
+        </WebOverlay>
+      ) : (
+        <Modal visible={bellOpen} transparent animationType="fade" onRequestClose={() => setBellOpen(false)}>
+          <Pressable style={s.bellOverlay} onPress={() => setBellOpen(false)}>
+            <Pressable style={[s.bellPanel, isWide && s.bellPanelWide]} onPress={(e) => e.stopPropagation()}>
+              <View style={s.bellHeader}>
+                <Text style={s.bellTitle}>Pending Approvals</Text>
+                <TouchableOpacity onPress={() => setBellOpen(false)}>
+                  <Feather name="x" size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                {pendingData.communities.length === 0 && pendingData.events.length === 0 && (
+                  <Text style={s.bellEmpty}>No pending items 🎉</Text>
+                )}
+                {pendingData.communities.length > 0 && (
+                  <View>
+                    <Text style={s.bellSection}>Communities ({pendingData.communities.length})</Text>
+                    {pendingData.communities.map((c) => (
+                      <TouchableOpacity key={c.id} style={s.bellItem} onPress={() => { setBellOpen(false); router.push('/(admin)/communities' as any); }}>
+                        <View style={s.bellDot} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.bellItemTitle} numberOfLines={1}>{c.name}</Text>
+                          <Text style={s.bellItemSub} numberOfLines={1}>by {c.members?.[0]?.user?.displayName ?? '—'} · {c.members?.[0]?.user?.email ?? ''}</Text>
+                        </View>
+                        <Feather name="chevron-right" size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                {pendingData.events.length > 0 && (
+                  <View>
+                    <Text style={s.bellSection}>Events ({pendingData.events.length})</Text>
+                    {pendingData.events.map((e) => (
+                      <TouchableOpacity key={e.id} style={s.bellItem} onPress={() => { setBellOpen(false); router.push('/(admin)/events' as any); }}>
+                        <View style={[s.bellDot, { backgroundColor: '#6366F1' }]} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.bellItemTitle} numberOfLines={1}>{e.title}</Text>
+                          <Text style={s.bellItemSub} numberOfLines={1}>{e.community?.name ? `in ${e.community.name}` : 'No community'}</Text>
+                        </View>
+                        <Feather name="chevron-right" size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+              {pendingCount > 0 && (
+                <View style={s.bellFooter}>
+                  <TouchableOpacity style={s.bellFooterBtn} onPress={() => { setBellOpen(false); router.push('/(admin)/communities' as any); }}>
+                    <Text style={s.bellFooterText}>View all pending →</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -309,7 +403,6 @@ const s = StyleSheet.create({
   topBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 14,
-    overflow: 'hidden',
   },
   menuBtn: { padding: 6, borderRadius: 8 },
   pageTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, letterSpacing: -0.2 },

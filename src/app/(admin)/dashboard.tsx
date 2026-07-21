@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import AdminShell from '../../components/admin/AdminShell';
 import { StatCard, SectionCard, LoadingOverlay, EmptyState, C } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
+import { useAdminStore } from '../../store/adminStore';
 import { formatDistanceToNow, fmtDate, fmtTime } from '../../utils/adminUtils';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
@@ -33,6 +34,15 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
+      // Wait for adminStore to rehydrate so token is available
+      if (!useAdminStore.persist.hasHydrated()) {
+        await new Promise<void>((resolve) => {
+          const unsub = useAdminStore.persist.onFinishHydration(() => { unsub(); resolve(); });
+          setTimeout(resolve, 300);
+        });
+      }
+      const token = useAdminStore.getState().token;
+      if (!token) { setError('Missing admin token'); setLoading(false); return; }
       const [statsRes, activityRes] = await Promise.all([
         adminApiClient.get('/admin-panel/dashboard'),
         adminApiClient.get('/admin-panel/recent-activity'),

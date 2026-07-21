@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SectionCard, Skeleton, EmptyState, T, COL, TableRow, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SectionCard, Skeleton, EmptyState, T, COL, TableRow, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { apiClient } from '../../api/client';
 import { fmtDateTime } from '../../utils/adminUtils';
 
 type Tab = 'shares' | 'referrals';
 
 export default function AdminReferrals() {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState<Tab>('shares');
   const [shares, setShares] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function AdminReferrals() {
   function renderShares() {
     if (loading) return <Skeleton rows={6} />;
     if (shares.length === 0) return <EmptyState />;
-    if (IS_MOBILE) {
+    if (isMobile) {
       return shares.map((s) => (
         <MobileCard key={s.id}>
           <Text style={T.cellPrimary}>{s.sharer?.displayName ?? '—'}</Text>
@@ -67,7 +68,7 @@ export default function AdminReferrals() {
   function renderReferrals() {
     if (loading) return <Skeleton rows={6} />;
     if (referrals.length === 0) return <EmptyState />;
-    if (IS_MOBILE) {
+    if (isMobile) {
       return referrals.map((r) => (
         <MobileCard key={r.id}>
           <Text style={T.cellPrimary}>{r.displayName}</Text>
@@ -123,7 +124,7 @@ export default function AdminReferrals() {
           ))}
         </View>
 
-        <View style={{ padding: IS_MOBILE ? 12 : 0 }}>
+        <View style={{ padding: isMobile ? 12 : 0 }}>
           {tab === 'shares' ? renderShares() : renderReferrals()}
         </View>
       </SectionCard>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Image, ScrollView } from 'react-native';
 import AdminShell from '../../components/admin/AdminShell';
-import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, TableRow, T, COL, MobileCard, MobileCardRow, IS_MOBILE } from '../../components/admin/AdminUI';
+import { SearchBar, SectionCard, Skeleton, EmptyState, Pagination, TableRow, T, COL, MobileCard, MobileCardRow, useIsMobile } from '../../components/admin/AdminUI';
 import { adminApiClient } from '../../api/adminClient';
 import { fmtDate } from '../../utils/adminUtils';
 
@@ -17,6 +17,7 @@ const COLS: { label: string; style: object }[] = [
 ];
 
 export default function AdminProfiles() {
+  const isMobile = useIsMobile();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -43,7 +44,7 @@ export default function AdminProfiles() {
           <SearchBar value={q} onChangeText={setQ} placeholder="Search profiles…" />
         </View>
 
-        {IS_MOBILE ? (
+        {isMobile ? (
           <View style={{ padding: 12 }}>
             {loading ? <Skeleton rows={6} /> : profiles.length === 0 ? <EmptyState /> : (
               profiles.map((p) => (
