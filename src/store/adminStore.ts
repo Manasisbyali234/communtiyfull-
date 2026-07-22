@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 interface AdminUser {
   id: string;
@@ -30,7 +31,9 @@ export const useAdminStore = create<AdminAuthState>()(
     }),
     {
       name: 'admin-auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() =>
+        Platform.OS === 'web' ? localStorage : AsyncStorage
+      ),
     }
   )
 );

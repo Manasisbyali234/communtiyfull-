@@ -12,7 +12,8 @@ adminApiClient.interceptors.request.use(async (config) => {
   if (!useAdminStore.persist.hasHydrated()) {
     await new Promise<void>((resolve) => {
       const unsub = useAdminStore.persist.onFinishHydration(() => { unsub(); resolve(); });
-      setTimeout(resolve, 300);
+      // Fallback timeout only for native (web hydrates synchronously with localStorage)
+      if (typeof localStorage === 'undefined') setTimeout(resolve, 500);
     });
   }
   const token = useAdminStore.getState().token;
@@ -25,7 +26,7 @@ adminApiClient.interceptors.request.use(async (config) => {
 adminApiClient.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && useAdminStore.getState().isAuthenticated) {
       useAdminStore.getState().logout();
     }
     return Promise.reject(error);

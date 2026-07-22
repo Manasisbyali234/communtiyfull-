@@ -14,9 +14,9 @@ node_modules/
 
 # Expo
 .expo/
+.expo-release-check/
 dist/
 web-build/
-.expo-release-check/
 
 # Android
 android/build/
