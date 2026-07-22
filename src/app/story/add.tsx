@@ -73,11 +73,17 @@ function CameraScreen({ onMedia }: { onMedia: (m: MediaItem) => void }) {
 
   const handleGallery = () => {
     if (Platform.OS === 'web') { openFilePicker(); return; }
-    import('expo-image-picker').then(async ({ launchImageLibraryAsync }) => {
+    import('expo-image-picker').then(async ({ launchImageLibraryAsync, requestMediaLibraryPermissionsAsync }) => {
+      const { status } = await requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission required', 'Allow photo library access to pick media.'); return; }
       const result = await launchImageLibraryAsync({ mediaTypes: ['images', 'videos'] as any, quality: 0.9 });
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
-        onMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', mimeType: asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'), filename: asset.fileName ?? `story_${Date.now()}` });
+        const isVideo = asset.type === 'video';
+        const mime = asset.mimeType ?? (isVideo ? 'video/mp4' : 'image/jpeg');
+        const ext = mime.split('/')[1]?.replace('quicktime', 'mov') ?? (isVideo ? 'mp4' : 'jpg');
+        const name = asset.fileName ?? `story_${Date.now()}.${ext}`;
+        onMedia({ uri: asset.uri, type: isVideo ? 'video' : 'image', mimeType: mime, filename: name });
       }
     });
   };

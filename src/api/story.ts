@@ -82,12 +82,15 @@ export async function uploadMediaFile(
   onProgress?: (pct: number) => void
 ): Promise<string> {
   const formData = new FormData();
-  // React Native's XHR uploader expects a URI descriptor. Converting a native
-  // camera URI to Blob first can cause XHR to fail with a generic network error.
   if (Platform.OS === 'web') {
     formData.append('file', file as File | Blob, filename);
   } else {
-    formData.append('file', file as any);
+    const nativeFile = file as { uri: string; name?: string; type?: string };
+    formData.append('file', {
+      uri: nativeFile.uri,
+      name: nativeFile.name ?? filename,
+      type: nativeFile.type ?? mimeType,
+    } as any);
   }
 
   const token = useAuthStore.getState().token;
