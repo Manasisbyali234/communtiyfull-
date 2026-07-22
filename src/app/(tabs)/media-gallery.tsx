@@ -3,23 +3,23 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Dimensions, FlatList, Modal, Platform,
-  Pressable, StyleSheet, Text, TouchableOpacity, View,
+  FlatList, Modal, Platform,
+  Pressable, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserFilesQuery } from '../../api/media';
 import Skeleton from '../../components/feedback/Skeleton';
 import { useTheme } from '../../theme';
 
-const { width: SW } = Dimensions.get('window');
 const COLS = 3;
 const GAP = 2;
-const TILE = (SW - GAP * (COLS + 1)) / COLS;
 
 export default function MediaGalleryScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const tileSize = (windowWidth - GAP * (COLS + 1)) / COLS;
 
   const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export default function MediaGalleryScreen() {
       {isLoading ? (
         <View style={styles.skeletonGrid}>
           {Array.from({ length: 9 }).map((_, i) => (
-            <Skeleton key={i} width={TILE} height={TILE} borderRadius={0} />
+            <Skeleton key={i} width={tileSize} height={tileSize} borderRadius={0} />
           ))}
         </View>
       ) : displayed.length === 0 ? (
@@ -88,7 +88,7 @@ export default function MediaGalleryScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => item.mimeType.startsWith('image') && setLightbox(item.url)}
-              style={[styles.tile, { width: TILE, height: TILE }]}
+              style={[styles.tile, { width: tileSize, height: tileSize }]}
             >
               <Image source={{ uri: item.url }} style={styles.tileImg} contentFit="cover" transition={200} />
               {item.mimeType.startsWith('video') && (
@@ -107,8 +107,8 @@ export default function MediaGalleryScreen() {
       {/* Lightbox */}
       <Modal visible={!!lightbox} transparent animationType="fade" onRequestClose={() => setLightbox(null)}>
         <Pressable style={styles.lightboxBg} onPress={() => setLightbox(null)}>
-          <Image source={{ uri: lightbox! }} style={styles.lightboxImg} contentFit="contain" />
-          <TouchableOpacity style={styles.lightboxClose} onPress={() => setLightbox(null)}>
+          <Image source={{ uri: lightbox! }} style={{ width: windowWidth, height: windowHeight }} contentFit="contain" />
+          <TouchableOpacity style={[styles.lightboxClose, { top: insets.top + 16 }]} onPress={() => setLightbox(null)}>
             <Ionicons name="close-circle" size={36} color="#FFF" />
           </TouchableOpacity>
         </Pressable>
@@ -147,6 +147,5 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: 'rgba(0,0,0,0.92)',
     alignItems: 'center', justifyContent: 'center',
   },
-  lightboxImg: { width: SW, height: SW },
-  lightboxClose: { position: 'absolute', top: 48, right: 16 },
+  lightboxClose: { position: 'absolute', right: 16 },
 });

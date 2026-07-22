@@ -6,8 +6,8 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,17 +21,17 @@ interface BottomSheetProps {
   title?: string;
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 export const BottomSheet: React.FC<BottomSheetProps> = ({
   visible,
   onClose,
   children,
-  height = SCREEN_HEIGHT * 0.7,
+  height,
   title,
 }) => {
   const { colors, spacing, roundness, typography } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const sheetHeight = Math.max(0, Math.min(height ?? windowHeight * 0.7, windowHeight - insets.top - 16));
 
   const handleClose = () => {
     onClose();
@@ -56,7 +56,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             styles.sheet,
             {
               backgroundColor: colors.cardBg,
-              height,
+              height: sheetHeight,
               borderTopLeftRadius: roundness.xl,
               borderTopRightRadius: roundness.xl,
               paddingBottom: insets.bottom + spacing.sm,

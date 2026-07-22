@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
   SafeAreaView, Platform, ActivityIndicator, Alert, ScrollView,
-  StatusBar, Dimensions, TextInput, KeyboardAvoidingView,
+  StatusBar, TextInput, KeyboardAvoidingView, useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -11,8 +11,6 @@ import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo
 import { LinearGradient } from 'expo-linear-gradient';
 import { useToastStore } from '../../store/toastStore';
 import { uploadMediaFile, useCreateStoryMutation } from '../../api/story';
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 type MediaItem = { uri: string; type: 'image' | 'video'; blob?: Blob; filename?: string; mimeType?: string };
 type Screen = 'camera' | 'preview';
@@ -246,6 +244,7 @@ function PreviewScreen({ media, onRetake }: { media: MediaItem; onRetake: () => 
   const showToast = useToastStore((s) => s.showToast);
   const router = useRouter();
   const createStory = useCreateStoryMutation();
+  const { width: windowWidth } = useWindowDimensions();
 
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -301,7 +300,7 @@ function PreviewScreen({ media, onRetake }: { media: MediaItem; onRetake: () => 
   };
 
   const containerRef = useRef<KeyboardAvoidingView>(null);
-  const [containerSize, setContainerSize] = useState({ w: SCREEN_W, h: 0 });
+  const [containerSize, setContainerSize] = useState({ w: windowWidth, h: 0 });
 
   const compositeImageWithOverlays = async (sourceBlob: Blob): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -309,7 +308,7 @@ function PreviewScreen({ media, onRetake }: { media: MediaItem; onRetake: () => 
       const objectUrl = URL.createObjectURL(sourceBlob);
       img.onload = () => {
         // Use the container's rendered size so overlay % positions map exactly
-        const W = containerSize.w || SCREEN_W;
+        const W = containerSize.w || windowWidth;
         const H = containerSize.h || img.naturalHeight * (W / img.naturalWidth);
         const canvas = document.createElement('canvas');
         canvas.width = W; canvas.height = H;

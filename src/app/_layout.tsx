@@ -34,8 +34,9 @@ function RootLayoutContent() {
   const isNavigating = useRef(false);
   const appState = useRef(AppState.currentState);
 
-  // When app returns from background (killed & reopened from recents),
-  // re-init tokens and redirect to the correct home screen.
+  // Restore in-memory tokens when the app returns from the background.
+  // Do not navigate here: system UI such as the image picker backgrounds the
+  // app, and replacing the route would unmount the screen that opened it.
   useEffect(() => {
     if (Platform.OS === 'web') return;
     let lastBackground = 0;
@@ -49,14 +50,9 @@ function RootLayoutContent() {
           return;
         }
         await useAuthStore.getState().initSecureTokens();
-        const { isAuthenticated, user } = useAuthStore.getState();
-        const isLoggedIn = isAuthenticated || !!user;
-        const isAdminUser = user?.role?.toUpperCase() === 'ADMIN';
-        if (isLoggedIn) {
-          router.replace(isAdminUser ? '/(admin)/dashboard' as any : '/(tabs)');
-        } else {
-          router.replace('/(auth)/login');
-        }
+        // The auth-routing effect below will redirect only if the restored
+        // state is actually unauthenticated. Keeping the active route here is
+        // required for image/document pickers and other system activities.
       }
       if (nextState.match(/inactive|background/)) lastBackground = Date.now();
       appState.current = nextState;

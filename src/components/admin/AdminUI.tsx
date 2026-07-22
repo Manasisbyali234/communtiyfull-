@@ -1,10 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
-
-const SCREEN_W = Dimensions.get('window').width;
 
 export const C = {
   accent:      '#16A34A',
@@ -324,7 +322,7 @@ const mc = StyleSheet.create({
 
 export function useIsMobile() {
   const { width } = useWindowDimensions();
-  return width < 600;
+  return width < 768;
 }
 export function LoadingOverlay() {
   return (

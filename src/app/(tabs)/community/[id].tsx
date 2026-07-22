@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BANNER_HEIGHT = Math.round(SCREEN_WIDTH * 0.48);
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useTheme } from '../../../theme';
@@ -27,6 +24,8 @@ export default function CommunityDetails() {
   const { colors, spacing, typography, roundness, palette } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const bannerHeight = Math.round(windowWidth * 0.48);
   const showToast = useToastStore((state) => state.showToast);
 
   const [activeTab, setActiveTab] = useState<TabType>('posts');
@@ -86,7 +85,7 @@ export default function CommunityDetails() {
   const renderHeader = () => (
     <View style={styles.detailsHeader}>
       {/* Cover / Banner */}
-      <View style={styles.bannerContainer}>
+      <View style={[styles.bannerContainer, { height: bannerHeight }]}>
         <Image source={{ uri: community.bannerUrl }} style={styles.banner} />
         <TouchableOpacity
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
@@ -359,7 +358,6 @@ const styles = StyleSheet.create({
   },
   bannerContainer: {
     width: '100%',
-    height: BANNER_HEIGHT,
     position: 'relative',
   },
   banner: {

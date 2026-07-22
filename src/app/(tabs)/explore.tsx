@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity,
-  TextInput, Dimensions, Platform, Animated,
+  TextInput, Platform, Animated, useWindowDimensions,
   RefreshControl, ActivityIndicator, FlatList,
 } from 'react-native';
 import { FlashList as ShopifyFlashList } from '@shopify/flash-list';
@@ -24,10 +24,6 @@ import { useAuthStore } from '../../store/authStore';
 import EventCommentSheet from '../../components/feed/EventCommentSheet';
 import EventShareSheet from '../../components/feed/EventShareSheet';
 import { API_BASE_URL } from '../../api/client';
-
-const { width: SW } = Dimensions.get('window');
-const COMM_BANNER_H = Math.round(SW * 0.28);
-const EVENT_BANNER_H = Math.round(SW * 0.4);
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 type ExploreTab = 'members' | 'communities' | 'feed' | 'events';
@@ -127,6 +123,9 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const showToast = useToastStore((s) => s.showToast);
   const currentUser = useAuthStore((s) => s.user);
+  const { width: windowWidth } = useWindowDimensions();
+  const communityBannerHeight = Math.round(windowWidth * 0.28);
+  const eventBannerHeight = Math.round(windowWidth * 0.4);
 
   const initialTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const [activeTab, setActiveTab] = useState<ExploreTab>(
@@ -373,10 +372,10 @@ export default function ExploreScreen() {
       activeOpacity={0.9}
     >
       {/* Banner */}
-      <View style={styles.communityBannerWrap}>
+      <View style={[styles.communityBannerWrap, { height: communityBannerHeight }]}>
         <ExpoImage
           source={{ uri: item.bannerUrl || 'https://placehold.co/600x200/e8f5e9/4caf50?text=Community' }}
-          style={styles.communityBanner}
+          style={[styles.communityBanner, { height: communityBannerHeight }]}
           contentFit="cover"
         />
         <View style={styles.communityBannerOverlay} />
@@ -483,15 +482,15 @@ export default function ExploreScreen() {
     return (
       <View style={[styles.eventCard, { backgroundColor: SURF, borderColor: BORDER }]}>
         {/* Banner */}
-        <View style={styles.eventBannerWrap}>
+        <View style={[styles.eventBannerWrap, { height: eventBannerHeight }]}>
           {item.coverUrl && !item.coverUrl.startsWith('blob:') ? (
             <ExpoImage
               source={{ uri: item.coverUrl }}
-              style={styles.eventBanner}
+              style={[styles.eventBanner, { height: eventBannerHeight }]}
               contentFit="cover"
             />
           ) : (
-            <View style={[styles.eventBanner, { backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center' }]}>
+            <View style={[styles.eventBanner, { height: eventBannerHeight, backgroundColor: colors.primaryContainer, alignItems: 'center', justifyContent: 'center' }]}>
               <Ionicons name="calendar-outline" size={48} color={colors.primary} />
             </View>
           )}
@@ -976,8 +975,8 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  communityBannerWrap: { height: COMM_BANNER_H, position: 'relative' },
-  communityBanner: { width: '100%', height: COMM_BANNER_H },
+  communityBannerWrap: { position: 'relative' },
+  communityBanner: { width: '100%' },
   communityBannerOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.4)' },
   categoryChip: {
     position: 'absolute', top: 10, right: 10,
@@ -1016,8 +1015,8 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  eventBannerWrap: { height: EVENT_BANNER_H, position: 'relative', overflow: 'hidden' },
-  eventBanner: { width: '100%', height: EVENT_BANNER_H },
+  eventBannerWrap: { position: 'relative', overflow: 'hidden' },
+  eventBanner: { width: '100%' },
   eventBannerOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
   dateBadge: {
     position: 'absolute', top: 12, left: 12, zIndex: 10,
