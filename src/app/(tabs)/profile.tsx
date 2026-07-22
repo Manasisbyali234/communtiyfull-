@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions, Platform,
+  Pressable,
   ScrollView,
   StyleSheet, Text,
   TouchableOpacity,
@@ -31,7 +33,7 @@ const { width: SW } = Dimensions.get('window');
 
 type ProfileTab = 'posts' | 'updates' | 'events' | 'family' | 'about';
 
-const COVER_HEIGHT = Math.round(SW * 0.48);
+const COVER_HEIGHT = 240;
 
 // ── Mock Profile Data ─────────────────────────────────────────────────────────
 const PROFILE = {
@@ -156,7 +158,6 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width: SW } = useWindowDimensions();
-  const COVER_HEIGHT = Math.round(SW * 0.48);
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -273,7 +274,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
       >
@@ -285,117 +286,140 @@ export default function ProfileScreen() {
           <View style={styles.coverGradient} />
         </View>
 
-        {/* ── Avatar + Volunteer Badge ──────────────────────────────── */}
-        <View style={styles.avatarSection}>
-          <View style={[styles.avatarRingOuter, { borderColor: BG, backgroundColor: BG }]}>
-            <View style={[styles.avatarRingInner, { borderColor: G }]}>
-              {user?.avatarUrl && user.avatarUrl.startsWith('http') ? (
-                <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
-              ) : (
-                <View style={[styles.avatarImg, styles.avatarPlaceholder, { backgroundColor: colors.primaryContainer }]}>
-                  <Ionicons name="person" size={48} color={G} />
-                </View>
-              )}
+        {/* ── Premium Profile Card ─────────────────────────────────── */}
+        <View style={[styles.profileCard, { backgroundColor: isDark ? SURF : '#FAFAF7' }]}>
+
+          {/* Avatar Row */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarWrapper}>
+              <View style={[styles.avatarRingOuter, { borderColor: '#FFFFFF', backgroundColor: '#FFFFFF' }]}>
+                {user?.avatarUrl && user.avatarUrl.startsWith('http') ? (
+                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+                ) : (
+                  <View style={[styles.avatarImg, styles.avatarPlaceholder, { backgroundColor: colors.primaryContainer }]}>
+                    <Ionicons name="person" size={52} color={G} />
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 
-          {/* removed volunteer badge */}
-        </View>
-
-        {/* ── Identity Block ───────────────────────────────────────── */}
-        <View style={styles.identityBlock}>
-          <Text style={[styles.profileName, { color: TEXT }]}>{user?.displayName || 'User'}</Text>
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={14} color={SAFFRON} />
-            <Text style={[styles.locationText, { color: TEXT2 }]}>
-              {user?.village || 'Unknown Location'}
-            </Text>
-          </View>
-
-          {/* Occupation chip */}
-          <View style={[styles.occupationChip, { backgroundColor: colors.primaryContainer }]}>
-            <Ionicons name="leaf-outline" size={13} color={G} />
-            <Text style={[styles.occupationText, { color: colors.primaryDark }]}>{user?.occupation || 'Member'}</Text>
-          </View>
-
-          {/* Bio */}
-          <Text style={[styles.bio, { color: TEXT2 }]} numberOfLines={bioExpanded ? undefined : 2}>
-            {user?.bio || 'No bio provided.'}
-          </Text>
-          {!bioExpanded && (
-            <TouchableOpacity onPress={() => setBioExpanded(true)}>
-              <Text style={[styles.readMoreText, { color: G }]}>Read more</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* ── Compact Stats Row ────────────────────────────────────── */}
-        <View style={[styles.statsRow, { backgroundColor: SURF, borderColor: BORDER }]}>
-          {[
-            { label: 'Connections', value: (connectionCount ?? user?.followersCount ?? 0).toString() },
-            { label: 'Following', value: (user?.followingCount || 0).toString() },
-            { label: 'Since', value: (user?.joinedAt || user?.createdAt) ? new Date(user.joinedAt || user.createdAt!).getFullYear().toString() : new Date().getFullYear().toString() },
-          ].map((stat, i, arr) => (
-            <React.Fragment key={stat.label}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: TEXT }]}>{stat.value}</Text>
-                <Text style={[styles.statLabel, { color: TEXT3 }]}>{stat.label}</Text>
+          {/* Identity */}
+          <View style={styles.identityBlock}>
+            <View style={styles.nameRow}>
+              <Text style={[styles.profileName, { color: TEXT }]}>{user?.displayName || 'User'}</Text>
+              <View style={[styles.verifiedBadge, { backgroundColor: G }]}>
+                <Ionicons name="checkmark" size={10} color="#FFF" />
               </View>
-              {i < arr.length - 1 && <View style={[styles.statDivider, { backgroundColor: BORDER }]} />}
-            </React.Fragment>
-          ))}
-        </View>
+            </View>
 
-        {/* ── Action Buttons ───────────────────────────────────────── */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[styles.btnPrimary, { backgroundColor: G }]}
-            onPress={() => router.push('/edit-profile' as any)}
-          >
-            <Ionicons name="create-outline" size={16} color="#FFF" />
-            <Text style={styles.btnPrimaryText} numberOfLines={1}>Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnSecondary, { backgroundColor: SURF, borderColor: BORDER }]} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={18} color={TEXT} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnSecondary, { backgroundColor: SURF, borderColor: BORDER }]} onPress={handleMessage}>
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color={TEXT} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.btnSecondary, { backgroundColor: isConnected ? colors.primaryContainer : SURF, borderColor: isConnected ? G : BORDER }]} 
-            onPress={handleConnect}
-          >
-            <Ionicons name={isConnected ? "person-remove-outline" : "person-add-outline"} size={18} color={isConnected ? G : TEXT} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btnSecondary, { backgroundColor: SURF, borderColor: BORDER }]}
-            onPress={() => router.push('/(tabs)/media-gallery' as any)}
-          >
-            <Ionicons name="images-outline" size={18} color={TEXT} />
-          </TouchableOpacity>
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={13} color={TEXT3} />
+              <Text style={[styles.locationText, { color: TEXT3 }]}>
+                {user?.village || 'Unknown Location'}
+              </Text>
+            </View>
+
+            {/* Gradient Member Badge */}
+            <LinearGradient
+              colors={[G, colors.primaryLight || '#4CAF50']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.memberBadge}
+            >
+              <Ionicons name="leaf" size={11} color="#FFF" />
+              <Text style={styles.memberBadgeText}>{user?.occupation || 'Member'}</Text>
+            </LinearGradient>
+
+            {/* Bio */}
+            <Text style={[styles.bio, { color: TEXT2 }]} numberOfLines={bioExpanded ? undefined : 2}>
+              {user?.bio || 'No bio provided.'}
+            </Text>
+            {!bioExpanded && (
+              <TouchableOpacity onPress={() => setBioExpanded(true)}>
+                <Text style={[styles.readMoreText, { color: G }]}>Read more</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Stats Cards */}
+          <View style={[styles.statsRow, { backgroundColor: isDark ? colors.elevation1 : '#F2F5F0', borderColor: BORDER }]}>
+            {[
+              { label: 'Connections', value: (connectionCount ?? user?.followersCount ?? 0).toString(), icon: 'people-outline' },
+              { label: 'Following', value: (user?.followingCount || 0).toString(), icon: 'person-add-outline' },
+              { label: 'Since', value: (user?.joinedAt || user?.createdAt) ? new Date(user.joinedAt || user.createdAt!).getFullYear().toString() : new Date().getFullYear().toString(), icon: 'calendar-outline' },
+            ].map((stat, i, arr) => (
+              <React.Fragment key={stat.label}>
+                <View style={styles.statItem}>
+                  <Ionicons name={stat.icon as any} size={16} color={G} style={{ marginBottom: 4 }} />
+                  <Text style={[styles.statValue, { color: TEXT }]}>{stat.value}</Text>
+                  <Text style={[styles.statLabel, { color: TEXT3 }]}>{stat.label}</Text>
+                </View>
+                {i < arr.length - 1 && <View style={[styles.statDivider, { backgroundColor: BORDER }]} />}
+              </React.Fragment>
+            ))}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionRow}>
+            <Pressable
+              style={({ pressed }) => [styles.btnPrimary, { backgroundColor: G, opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => router.push('/edit-profile' as any)}
+            >
+              <Ionicons name="create-outline" size={15} color="#FFF" />
+              <Text style={styles.btnPrimaryText}>Edit Profile</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.btnSecondary, { backgroundColor: pressed ? colors.elevation1 : SURF, borderColor: BORDER }]}
+              onPress={handleShare}
+            >
+              <Ionicons name="share-social-outline" size={18} color={TEXT} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.btnSecondary, { backgroundColor: pressed ? colors.elevation1 : SURF, borderColor: BORDER }]}
+              onPress={handleMessage}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={TEXT} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.btnSecondary, {
+                backgroundColor: isConnected ? colors.primaryContainer : (pressed ? colors.elevation1 : SURF),
+                borderColor: isConnected ? G : BORDER,
+              }]}
+              onPress={handleConnect}
+            >
+              <Ionicons name={isConnected ? 'person-remove-outline' : 'person-add-outline'} size={18} color={isConnected ? G : TEXT} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.btnSecondary, { backgroundColor: pressed ? colors.elevation1 : SURF, borderColor: BORDER }]}
+              onPress={() => router.push('/(tabs)/media-gallery' as any)}
+            >
+              <Ionicons name="images-outline" size={18} color={TEXT} />
+            </Pressable>
+          </View>
+
         </View>
 
         {/* ── Tab Bar ─────────────────────────────────────────────── */}
-        <View style={[styles.tabBar, { backgroundColor: SURF, borderColor: BORDER }]}>
+        <View style={styles.tabBarWrapper}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
             {TABS.map((tab) => {
               const active = activeTab === tab.id;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={tab.id}
                   onPress={() => setActiveTab(tab.id)}
-                  style={[
+                  style={({ pressed }) => [
                     styles.tab,
                     active
                       ? { backgroundColor: colors.primaryContainer, borderColor: G }
-                      : { backgroundColor: 'transparent', borderColor: 'transparent' },
+                      : { backgroundColor: pressed ? colors.elevation1 : 'transparent', borderColor: 'transparent' },
                   ]}
                 >
-                  <Ionicons name={tab.icon as any} size={15} color={active ? G : TEXT3} />
+                  <Ionicons name={tab.icon as any} size={14} color={active ? G : TEXT3} />
                   <Text style={[styles.tabLabel, { color: active ? G : TEXT3, fontWeight: active ? '700' : '500' }]}>
                     {tab.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -574,57 +598,63 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.12)',
   },
 
-  // ── Avatar Section ──────────────────────────────────────────────────────────
-  avatarSection: { alignItems: 'center', marginTop: -52, marginBottom: 8 },
-  avatarRingOuter: {
-    padding: 4, borderRadius: 62,
+  // ── Premium Profile Card ────────────────────────────────────────────────────
+  profileCard: {
+    marginHorizontal: 14,
+    marginTop: -50,
+    borderRadius: 20,
+    paddingBottom: 16,
+    marginBottom: 10,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-      android: { elevation: 6 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 16 },
+      android: { elevation: 5 },
     }),
   },
-  avatarRingInner: {
-    width: 96, height: 96, borderRadius: 48,
-    borderWidth: 2.5, overflow: 'hidden',
+
+  // ── Avatar Section ──────────────────────────────────────────────────────────
+  avatarSection: { alignItems: 'center', marginTop: -46, marginBottom: 10 },
+  avatarWrapper: {
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12 },
+      android: { elevation: 8 },
+    }),
+  },
+  avatarRingOuter: {
+    width: 104, height: 104, borderRadius: 52,
+    borderWidth: 3.5, overflow: 'hidden',
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  volunteerBadge: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 5,
-    borderRadius: 20, gap: 5,
-    borderWidth: 2.5, marginTop: 8,
-  },
-  volunteerText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
 
   // ── Identity ────────────────────────────────────────────────────────────────
-  identityBlock: { paddingHorizontal: 24, alignItems: 'center', marginBottom: 16 },
-  profileName: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginBottom: 6, textAlign: 'center' },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
-  locationText: { fontSize: 14, fontWeight: '500' },
-  occupationChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    marginBottom: 12,
+  identityBlock: { paddingHorizontal: 20, alignItems: 'center', marginBottom: 14 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  profileName: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center' },
+  verifiedBadge: {
+    width: 18, height: 18, borderRadius: 9,
+    alignItems: 'center', justifyContent: 'center',
   },
-  occupationText: { fontSize: 13, fontWeight: '700' },
-  bio: { fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 6 },
-  readMoreText: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 8 },
+  locationText: { fontSize: 12, fontWeight: '500' },
+  memberBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20,
+    marginBottom: 10,
+  },
+  memberBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+  bio: { fontSize: 13.5, lineHeight: 21, textAlign: 'center', marginBottom: 4 },
+  readMoreText: { fontSize: 12.5, fontWeight: '700', marginTop: 2 },
 
   // ── Stats Row ────────────────────────────────────────────────────────────────
   statsRow: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 14,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-      android: { elevation: 1 },
-    }),
+    borderWidth: StyleSheet.hairlineWidth, paddingVertical: 12, marginBottom: 14,
   },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '800' },
+  statItem: { flex: 1, alignItems: 'center', paddingVertical: 2 },
+  statValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
   statLabel: { fontSize: 11, fontWeight: '500', marginTop: 2 },
-  statDivider: { width: 1, height: 28 },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 36 },
 
   // ── Contribution Cards ───────────────────────────────────────────────────────
   contribScroll: { paddingHorizontal: 16, gap: 12, paddingBottom: 4, marginBottom: 16 },
@@ -639,50 +669,49 @@ const styles = StyleSheet.create({
   // ── Action Row ─────────────────────────────────────────────────────────────
   actionRow: {
     flexDirection: 'row', gap: 8, alignItems: 'center',
-    paddingHorizontal: 16, marginBottom: 16, flexWrap: 'nowrap',
+    paddingHorizontal: 16, flexWrap: 'nowrap',
   },
   btnPrimary: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 11, paddingHorizontal: 8,
-    borderRadius: 24, gap: 5,
+    paddingVertical: 11, paddingHorizontal: 10,
+    borderRadius: 50, gap: 5,
     ...Platform.select({
-      ios: { shadowColor: '#2D6A2D', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6 },
+      ios: { shadowColor: '#2D6A2D', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.28, shadowRadius: 8 },
       android: { elevation: 4 },
     }),
   },
   btnPrimaryText: { color: '#FFF', fontSize: 13, fontWeight: '700', flexShrink: 1 },
   btnSecondary: {
-    width: 40, height: 40, alignItems: 'center',
-    justifyContent: 'center', borderRadius: 20, borderWidth: 1.5,
+    width: 42, height: 42, alignItems: 'center',
+    justifyContent: 'center', borderRadius: 21, borderWidth: 1.5,
     flexShrink: 0,
   },
 
   // ── Tab Bar ─────────────────────────────────────────────────────────────────
-  tabBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 16,
+  tabBarWrapper: {
+    marginHorizontal: 14,
+    marginBottom: 10,
   },
-  tabScroll: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  tabScroll: { paddingVertical: 4, gap: 6 },
   tab: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20, borderWidth: 1.5,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 13, paddingVertical: 7,
+    borderRadius: 50, borderWidth: 1.5,
   },
-  tabLabel: { fontSize: 13 },
+  tabLabel: { fontSize: 12 },
 
   // ── Content Area ─────────────────────────────────────────────────────────────
   contentArea: { paddingHorizontal: 16 },
   card: {
-    borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 2,
+    borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 2,
     ...Platform.select({
       ios: { shadowColor: '#1A2D1A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
       android: { elevation: 2 },
     }),
   },
-  cardTitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2, marginBottom: 16 },
+  cardTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2, marginBottom: 12 },
 
   // Event card inside posts tab
   eventHeader: { padding: 16, marginBottom: 12 },
