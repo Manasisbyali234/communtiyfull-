@@ -89,22 +89,23 @@ export default function EventShareSheet({ visible, onClose, eventTitle, shareUrl
     </TouchableOpacity>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
+  if (Platform.OS === 'ios') {
     return (
-      <View style={[StyleSheet.absoluteFillObject, styles.overlay, { zIndex: 999 }]}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
-        {SheetContent}
-      </View>
+      <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+          {SheetContent}
+        </TouchableOpacity>
+      </Modal>
     );
   }
 
+  // web + Android: plain View overlay — Modal crashes on both platforms
+  if (!visible) return null;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        {SheetContent}
-      </TouchableOpacity>
-    </Modal>
+    <View style={[StyleSheet.absoluteFill, styles.overlay, { zIndex: 999 }]}>
+      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+      {SheetContent}
+    </View>
   );
 }
 

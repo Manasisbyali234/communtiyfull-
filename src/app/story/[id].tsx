@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  backgroundImage: { ...StyleSheet.absoluteFillObject },
+  backgroundImage: { ...StyleSheet.absoluteFill },
   gradientTop: {
     position: 'absolute', top: 0, left: 0, right: 0, height: 120,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   userName: { color: '#FFF', fontSize: 14, fontWeight: '700' },
   timeText: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
   iconBtn: { padding: 4 },
-  touchZones: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', zIndex: 5 },
+  touchZones: { ...StyleSheet.absoluteFill, flexDirection: 'row', zIndex: 5 },
   touchLeft: { flex: 0.3 },
   touchRight: { flex: 0.7 },
 });

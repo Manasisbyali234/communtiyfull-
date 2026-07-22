@@ -154,7 +154,9 @@ export default function UserProfileScreen() {
 
   const handleShare = useCallback(async () => {
     if (!user) return;
-    const base = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+    const base = Platform.OS === 'web' && typeof window !== 'undefined' && window.location
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
     const link = `${base}/user/${user.id}`;
     const ok = await shareUrl(
       `Check out ${user.displayName}'s profile on GowdaCommunity! ${link}`,

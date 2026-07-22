@@ -128,17 +128,12 @@ export default function ExploreScreen() {
   const showToast = useToastStore((s) => s.showToast);
   const currentUser = useAuthStore((s) => s.user);
 
-  const [activeTab, setActiveTab] = useState<ExploreTab>(() => {
-    // On web, read directly from URL as the most reliable source
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const t = urlParams.get('tab');
-      if (t && ['members', 'communities', 'feed', 'events'].includes(t)) {
-        return t as ExploreTab;
-      }
-    }
-    return 'members';
-  });
+  const initialTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  const [activeTab, setActiveTab] = useState<ExploreTab>(
+    initialTab && ['members', 'communities', 'feed', 'events'].includes(initialTab)
+      ? initialTab as ExploreTab
+      : 'members'
+  );
 
   useEffect(() => {
     const t = Array.isArray(params.tab) ? params.tab[0] : params.tab;

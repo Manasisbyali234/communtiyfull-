@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { apiClient, API_BASE_URL } from './client';
 import { ApiResponse } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -51,7 +52,6 @@ export function useStoriesFeedQuery() {
   return useQuery<StoryGroup[]>({
     queryKey: storyKeys.feed(),
     enabled: isAuthenticated,
-    staleTime: 60_000,
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<StoryGroup[]>>('/stories/feed');
       return res.data.data ?? [];
@@ -76,13 +76,19 @@ export function useCreateStoryMutation() {
 
 // ─── Story-specific S3 upload (stories/ folder only) ─────────────────────────
 export async function uploadMediaFile(
-  file: File | Blob,
+  file: File | Blob | { uri: string; name: string; type: string },
   filename: string,
   mimeType: string,
   onProgress?: (pct: number) => void
 ): Promise<string> {
   const formData = new FormData();
-  formData.append('file', file, filename);
+  // React Native's XHR uploader expects a URI descriptor. Converting a native
+  // camera URI to Blob first can cause XHR to fail with a generic network error.
+  if (Platform.OS === 'web') {
+    formData.append('file', file as File | Blob, filename);
+  } else {
+    formData.append('file', file as any);
+  }
 
   const token = useAuthStore.getState().token;
 

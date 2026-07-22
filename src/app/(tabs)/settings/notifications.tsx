@@ -72,7 +72,7 @@ export default function NotificationsScreen() {
 
   const toggleAll = async () => {
     const next = !allOn;
-    const updates = Object.fromEntries(ROWS.map((r) => [r.key, next])) as NotifSettings;
+    const updates = Object.fromEntries(ROWS.map((r) => [r.key, next])) as unknown as NotifSettings;
     const prev = settings;
     setSettings(updates);
     setSaving(true);

@@ -9,6 +9,7 @@ import {
   StyleSheet, Text,
   TouchableOpacity,
   View,
+  Share,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -651,7 +652,7 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  btnPrimaryText: { color: '#FFF', fontSize: 13, fontWeight: '700', flexShrink: 1, numberOfLines: 1 },
+  btnPrimaryText: { color: '#FFF', fontSize: 13, fontWeight: '700', flexShrink: 1 },
   btnSecondary: {
     width: 40, height: 40, alignItems: 'center',
     justifyContent: 'center', borderRadius: 20, borderWidth: 1.5,

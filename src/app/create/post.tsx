@@ -139,51 +139,57 @@ export default function CreatePost() {
   const handleClearLocation = () => { setLocation(''); setLocationInput(''); };
 
   const handleAttachImage = async () => {
-    const picked = await pickImage();
-    if (!picked) return;
-    setImageUploading(true);
-    setUploadError(null);
     try {
+      const picked = await pickImage();
+      if (!picked) return;
+      setImageUploading(true);
+      setUploadError(null);
       const url = await uploadPostImage(picked);
       if (url) { setMediaUrl(url); setMediaKind('image'); }
       else showToast('Failed to upload image.', 'error');
+    } catch (e: any) {
+      const message = e?.response?.data?.message ?? e?.message ?? 'Failed to upload image.';
+      setUploadError(message);
+      showToast(message, 'error');
     } finally {
       setImageUploading(false);
     }
   };
 
   const handleAttachVideo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { showToast('Media library permission required.', 'error'); return; }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['videos'],
-      allowsEditing: false,
-      quality: 1,
-    });
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    const filename = asset.uri.split('/').pop() ?? 'video.mp4';
-    const ext = filename.split('.').pop()?.toLowerCase() ?? 'mp4';
-    const mimeMap: Record<string, string> = { mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo', webm: 'video/webm' };
-    const mimeType = mimeMap[ext] ?? 'video/mp4';
-
-    const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-    if (asset.fileSize && asset.fileSize > MAX_VIDEO_BYTES) {
-      showToast('Maximum video size allowed is 50 MB.', 'error');
-      return;
-    }
-
-    setVideoUploading(true);
-    setUploadProgress(0);
-    setUploadError(null);
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { showToast('Media library permission required.', 'error'); return; }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['videos'],
+        allowsEditing: false,
+        quality: 1,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      const filename = asset.uri.split('/').pop() ?? 'video.mp4';
+      const ext = filename.split('.').pop()?.toLowerCase() ?? 'mp4';
+      const mimeMap: Record<string, string> = { mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo', webm: 'video/webm' };
+      const mimeType = mimeMap[ext] ?? 'video/mp4';
+
+      const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+      if (asset.fileSize && asset.fileSize > MAX_VIDEO_BYTES) {
+        showToast('Maximum video size allowed is 50 MB.', 'error');
+        return;
+      }
+
+      setVideoUploading(true);
+      setUploadProgress(0);
+      setUploadError(null);
       const url = await uploadPostVideo({ localUri: asset.uri, filename, mimeType }, (pct) => setUploadProgress(pct));
       if (url) { setMediaUrl(url); setMediaKind('video'); }
       else { setUploadError('Failed to upload video.'); }
     } catch (e: any) {
-      setUploadError(e?.message ?? 'Failed to upload video.');
+      const message = e?.response?.data?.message ?? e?.message ?? 'Failed to upload video.';
+      setUploadError(message);
+      showToast(message, 'error');
     } finally {
       setVideoUploading(false);
       setUploadProgress(0);
@@ -462,17 +468,6 @@ export default function CreatePost() {
               })}
             </ScrollView>
           </View>
-
-          {/* Advanced settings row */}
-          <TouchableOpacity style={[styles.menuRow, { borderBottomWidth: 0 }]} onPress={() => {}} activeOpacity={0.65}>
-            <View style={[styles.menuIconWrap, { backgroundColor: colors.primaryContainer }]}>
-              <Ionicons name="settings-outline" size={18} color={colors.primary} />
-            </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>Advanced settings</Text>
-            <View style={styles.menuRight}>
-              <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
-            </View>
-          </TouchableOpacity>
 
         </View>
       </ScrollView>

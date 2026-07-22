@@ -294,7 +294,7 @@ function PreviewScreen({ media, onRetake }: { media: MediaItem; onRetake: () => 
     setSelectedTextId(null);
   };
 
-  const containerRef = useRef<View>(null);
+  const containerRef = useRef<KeyboardAvoidingView>(null);
   const [containerSize, setContainerSize] = useState({ w: SCREEN_W, h: 0 });
 
   const compositeImageWithOverlays = async (sourceBlob: Blob): Promise<Blob> => {
@@ -359,9 +359,21 @@ function PreviewScreen({ media, onRetake }: { media: MediaItem; onRetake: () => 
       let fileBlob: Blob;
       const filename = media.filename ?? `story_${Date.now()}`;
       const mimeType = media.mimeType ?? (media.type === 'video' ? 'video/mp4' : 'image/jpeg');
-      const rawBlob = media.blob ? media.blob : await (await fetch(media.uri)).blob();
+      if (Platform.OS !== 'web') {
+        const mediaUrl = await uploadMediaFile(
+          { uri: media.uri, name: filename, type: mimeType },
+          filename,
+          mimeType,
+          setProgress
+        );
+        await createStory.mutateAsync({ mediaUrl, mediaType: media.type === 'video' ? 'VIDEO' : 'IMAGE' });
+        setUploaded(true);
+        showToast('Story posted!', 'success');
+        setTimeout(() => router.replace('/(tabs)'), 800);
+        return;
+      }
 
-      // Bake overlays into the image via canvas
+      const rawBlob = media.blob ? media.blob : await (await fetch(media.uri)).blob();
       if (media.type === 'image' && (overlayEmojis.length > 0 || textOverlays.length > 0)) {
         fileBlob = await compositeImageWithOverlays(rawBlob);
       } else {

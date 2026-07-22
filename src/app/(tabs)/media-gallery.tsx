@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   tile: { overflow: 'hidden', position: 'relative' },
   tileImg: { width: '100%', height: '100%' },
   videoOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.25)',
   },

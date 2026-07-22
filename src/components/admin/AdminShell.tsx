@@ -14,8 +14,8 @@ type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
 function WebOverlay({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!visible) return null;
   return (
-    <View style={[StyleSheet.absoluteFillObject, { zIndex: 999 }]}>
-      <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+    <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       {children}
     </View>
   );

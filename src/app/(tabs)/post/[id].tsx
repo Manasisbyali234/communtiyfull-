@@ -78,7 +78,9 @@ export default function PostDetail() {
   };
 
   const handleShare = async () => {
-    const base = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+    const base = Platform.OS === 'web' && typeof window !== 'undefined' && window.location
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
     const link = `${base}/post/${post.id}`;
     const ok = await shareUrl(
       `Check out this post on GowdaCommunity! ${link}`,

@@ -39,76 +39,87 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   if (!visible) return null;
 
-  return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="none"
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
-      <View style={styles.container}>
-        {/* Backdrop — sits behind sheet */}
+  const SheetInner = (
+    <View style={styles.container}>
+      <View
+        style={[styles.backdrop, { backgroundColor: '#000000', opacity: 0.5 }]}
+        pointerEvents="none"
+      />
+      <Pressable style={styles.backdropPressable} onPress={handleClose} />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
+      >
         <View
-          style={[styles.backdrop, { backgroundColor: '#000000', opacity: 0.5 }]}
-          pointerEvents="none"
-        />
-        <Pressable style={styles.backdropPressable} onPress={handleClose} />
-
-        {/* Sheet — sits on top */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardView}
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.cardBg,
+              height,
+              borderTopLeftRadius: roundness.xl,
+              borderTopRightRadius: roundness.xl,
+              paddingBottom: insets.bottom + spacing.sm,
+            },
+          ]}
         >
-          <View
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: colors.cardBg,
-                height,
-                borderTopLeftRadius: roundness.xl,
-                borderTopRightRadius: roundness.xl,
-                paddingBottom: insets.bottom + spacing.sm,
-              },
-            ]}
-          >
-            {/* Grabber */}
-            <View style={styles.grabberContainer}>
-              <View style={[styles.grabber, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* Header */}
-            <View style={[styles.header, { borderBottomColor: colors.borderSecondary }]}>
-              {title ? (
-                <Text
-                  style={[
-                    styles.title,
-                    {
-                      color: colors.text,
-                      fontSize: typography.sizes.lg,
-                      fontWeight: typography.weights.bold,
-                    },
-                  ]}
-                >
-                  {title}
-                </Text>
-              ) : (
-                <View style={{ flex: 1 }} />
-              )}
-              <Pressable
-                onPress={handleClose}
-                style={[styles.closeBtn, { backgroundColor: colors.inputBg }]}
-              >
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-
-            {/* Body */}
-            <View style={styles.body}>{children}</View>
+          <View style={styles.grabberContainer}>
+            <View style={[styles.grabber, { backgroundColor: colors.border }]} />
           </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+
+          <View style={[styles.header, { borderBottomColor: colors.borderSecondary }]}>
+            {title ? (
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: colors.text,
+                    fontSize: typography.sizes.lg,
+                    fontWeight: typography.weights.bold,
+                  },
+                ]}
+              >
+                {title}
+              </Text>
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+            <Pressable
+              onPress={handleClose}
+              style={[styles.closeBtn, { backgroundColor: colors.inputBg }]}
+            >
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <View style={styles.body}>{children}</View>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
+  );
+
+  // Use plain View overlay on web + Android — Modal causes crashes on both:
+  // - web: react-native-web portal removeChild crash during navigation
+  // - Android: RN 0.86 + reanimated 4.x Modal touch interception bug
+  // Only use Modal on iOS where it works correctly.
+  if (Platform.OS !== 'web') {
+    return (
+      <Modal
+        transparent
+        visible={visible}
+        animationType="none"
+        onRequestClose={handleClose}
+        statusBarTranslucent
+      >
+        {SheetInner}
+      </Modal>
+    );
+  }
+
+  return (
+    <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]}>
+      {SheetInner}
+    </View>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,7 +56,9 @@ export default function CommunityDetails() {
 
   const handleShare = async () => {
     if (!community) return;
-    const base = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+    const base = Platform.OS === 'web' && typeof window !== 'undefined' && window.location
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
     const link = `${base}/community/${community.id}`;
     const ok = await shareUrl(
       `Check out the ${community.name} community on GowdaCommunity! ${link}`,
