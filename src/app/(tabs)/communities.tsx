@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -11,6 +12,30 @@ import Avatar from '../../components/common/Avatar';
 import Skeleton from '../../components/feedback/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { useToastStore } from '../../store/toastStore';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+function AnimatedCommunityCard({ scrollY, children }: { scrollY: Animated.SharedValue<number>; children: React.ReactNode }) {
+  const cardTop = useSharedValue(9999);
+
+  const animStyle = useAnimatedStyle(() => {
+    const dist = cardTop.value - scrollY.value - SCREEN_HEIGHT;
+    const progress = interpolate(dist, [80, -40], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: progress,
+      transform: [
+        { translateY: interpolate(progress, [0, 1], [40, 0], Extrapolation.CLAMP) },
+        { scale: interpolate(progress, [0, 1], [0.96, 1], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View style={animStyle} onLayout={(e) => { cardTop.value = e.nativeEvent.layout.y; }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function CommunitiesDirectory() {
   const { colors, spacing, typography, roundness } = useTheme();
@@ -24,6 +49,7 @@ export default function CommunitiesDirectory() {
 
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const scrollY = useSharedValue(0);
 
   const CATEGORIES = ['All', ...Array.from(new Set(communities.map((c) => c.category).filter(Boolean)))];
 
@@ -52,6 +78,7 @@ export default function CommunitiesDirectory() {
   });
 
   const renderCommunityCard = ({ item }: { item: any }) => (
+    <AnimatedCommunityCard scrollY={scrollY}>
     <Card style={styles.communityCard}>
       <TouchableOpacity
         onPress={() => router.push(`/community/${item.id}`)}
@@ -105,6 +132,7 @@ export default function CommunitiesDirectory() {
         </View>
       </View>
     </Card>
+    </AnimatedCommunityCard>
   );
 
   const renderSkeletonList = () => (
@@ -230,6 +258,8 @@ export default function CommunitiesDirectory() {
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
+          onScroll={(e) => { scrollY.value = e.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={40} color={colors.textMuted} />

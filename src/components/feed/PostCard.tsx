@@ -118,18 +118,9 @@ export const PostCard: React.FC<PostCardProps> = React.memo(({ post, onCommentPr
   const [imageLoaded, setImageLoaded] = useState(false);
   const moreBtnRef = useRef<View>(null);
 
-  // Animations
   const heartScale = useSharedValue(0);
   const heartOpacity = useSharedValue(0);
   const imageScale = useSharedValue(1);
-  const cardOpacity = useSharedValue(0);
-
-  // Card fade-in on mount
-  React.useEffect(() => {
-    cardOpacity.value = withTiming(1, { duration: 400 });
-  }, []);
-
-  const cardStyle = useAnimatedStyle(() => ({ opacity: cardOpacity.value }));
 
   const heartStyle = useAnimatedStyle(() => ({
     transform: [{ scale: heartScale.value }],
@@ -225,7 +216,7 @@ export const PostCard: React.FC<PostCardProps> = React.memo(({ post, onCommentPr
   const shouldShowReadMore = post.content.length > 120 || post.content.split('\n').length > 2;
 
   return (
-    <Animated.View style={[styles.card, cardStyle]}>
+    <Animated.View style={styles.card}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity

@@ -211,18 +211,15 @@ export default function KrushiMitraScreen() {
     </LinearGradient>
   );
 
-  const cardSize = Math.min(120, (screenWidth - 32 - 12 * 3) / 3.5);
-  const iconSize = Math.min(52, cardSize * 0.6);
-
   const ServicesSection = (
     <View style={{ marginBottom: 20 }}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Services</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servicesRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servicesList}>
         {filteredServices.map((service) => (
           <TouchableOpacity
             key={service.id}
             activeOpacity={0.75}
-            style={[styles.serviceCard, { backgroundColor: colors.surface, width: cardSize, padding: 12 }]}
+            style={[styles.servicePill, { backgroundColor: colors.surface }]}
             onPress={() => {
               if (service.id === 'tractor') setShowTraction(true);
               else if (service.id === 'price') setShowCalc(true);
@@ -230,10 +227,10 @@ export default function KrushiMitraScreen() {
               else if (service.id === 'market') router.push('/market-rates' as any);
             }}
           >
-            <View style={[styles.serviceIconWrap, { backgroundColor: service.color + '18', width: iconSize, height: iconSize, borderRadius: iconSize * 0.25 }]}>
-              <Ionicons name={service.icon as any} size={iconSize * 0.5} color={service.color} />
+            <View style={[styles.servicePillIcon, { backgroundColor: service.color + '15' }]}>
+              <Ionicons name={service.icon as any} size={22} color={service.color} />
             </View>
-            <Text style={[styles.serviceLabel, { color: colors.text }]}>{service.label}</Text>
+            <Text style={[styles.servicePillLabel, { color: colors.text }]}>{service.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -263,25 +260,14 @@ export default function KrushiMitraScreen() {
   );
 
   const GovernmentSchemes = (
-    <View style={styles.schemesSection}>
-      {/* Header row */}
-      <View style={styles.schemesHeader}>
-        <View>
-          <Text style={styles.schemesTitle}>Government Schemes</Text>
-          <Text style={styles.schemesSubtitle}>Useful portals for farmers</Text>
-        </View>
-        <TouchableOpacity>
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Single row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.schemesRow}>
+    <View style={{ marginBottom: 0 }}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Government Schemes</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.schemesList}>
         {SCHEMES.map((item) => (
           <TouchableOpacity
             key={item.id}
-            activeOpacity={0.85}
-            style={[styles.schemeCardNew, { width: cardSize, padding: 12 }]}
+            activeOpacity={0.8}
+            style={[styles.schemePill, { backgroundColor: colors.surface }]}
             onPress={() => {
               if (item.id === 'pmkisan') Linking.openURL('https://pmkisan.gov.in/');
               else if (item.id === 'shc') Linking.openURL('https://soilhealth.dac.gov.in/home');
@@ -289,10 +275,10 @@ export default function KrushiMitraScreen() {
               else if (item.id === 'kcc') Linking.openURL('https://www.myscheme.gov.in/schemes/kcc');
             }}
           >
-            <View style={[styles.schemeIconWrapNew, { backgroundColor: item.bg, width: iconSize, height: iconSize, borderRadius: iconSize * 0.25 }]}>
-              <Ionicons name={item.icon as any} size={iconSize * 0.5} color={item.color} />
+            <View style={[styles.schemePillIcon, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon as any} size={22} color={item.color} />
             </View>
-            <Text style={styles.schemeLabelNew}>{item.label}</Text>
+            <Text style={[styles.schemePillLabel, { color: colors.text }]}>{item.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -829,20 +815,24 @@ const styles = StyleSheet.create({
   // Section Title
   sectionTitle: { fontSize: 15, fontWeight: '700', letterSpacing: -0.2, marginBottom: 12 },
 
-  // Services
-  servicesRow: { flexDirection: 'row', gap: 12, paddingRight: 4 },
-  serviceCard: {
-    width: 120,
-    borderRadius: 18,
-    padding: 16,
+  // Services — horizontal pills
+  servicesList: { flexDirection: 'row', gap: 10, paddingRight: 4 },
+  servicePill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 50,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 8,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
-      android: { elevation: 4 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.07)' } as any,
     }),
   },
-  serviceIconWrap: { width: 72, height: 72, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  serviceLabel: { fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 18, marginTop: 12 },
+  servicePillIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  servicePillLabel: { fontSize: 13, fontWeight: '700' },
+  servicePillArrow: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 
   // Seasonal Advisory
   seasonalCard: {
@@ -867,56 +857,23 @@ const styles = StyleSheet.create({
   },
   learnMoreText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 
-  // Government Schemes (legacy — kept for safety)
-  schemeCard: { borderRadius: 16, borderWidth: 1, padding: 14, alignItems: 'center', width: 110, gap: 8 },
-  schemeIconWrap: { width: 46, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  schemeLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 15 },
-
-  // Government Schemes — redesigned
-  schemesSection: {
-    backgroundColor: '#FAFAFA',
-    paddingVertical: 24,
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-    marginBottom: 0,
-  },
-  schemesHeader: {
+  // Government Schemes — horizontal pills (same as services)
+  schemesList: { flexDirection: 'row', gap: 10, paddingRight: 4 },
+  schemePill: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  schemesTitle: { fontSize: 18, fontWeight: '700', color: '#222', letterSpacing: -0.3 },
-  schemesSubtitle: { fontSize: 13, color: '#888', marginTop: 3 },
-  viewAllText: { fontSize: 14, fontWeight: '700', color: '#2E7D32', marginTop: 4 },
-  schemesGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  schemesRow: { flexDirection: 'row', gap: 12, paddingRight: 4 },
-  schemeCardNew: {
-    width: 120,
-    borderRadius: 18,
-    padding: 16,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    borderRadius: 50,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 8,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
-      android: { elevation: 4 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.07)' } as any,
     }),
   },
-  schemeIconWrapNew: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  schemeLabelNew: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 14,
-  },
+  schemePillIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  schemePillLabel: { fontSize: 13, fontWeight: '700' },
 
 
 

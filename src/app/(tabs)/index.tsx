@@ -14,6 +14,7 @@ import {
   Share,
   useWindowDimensions,
 } from 'react-native';
+import ReAnimated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCommunitiesQuery } from '../../api/community';
 import { usePostsQuery } from '../../api/feed';
@@ -37,6 +38,39 @@ const QUICK_ACTIONS = [
   { id: 'krushi-mitra', icon: 'leaf', label: 'Krushi Mitra', color: '#2D6A2D', route: '/krushi-mitra' },
 ];
 
+
+// ── Animated wrapper: card peeks in as it enters the bottom of viewport ──────
+const { height: SCREEN_HEIGHT } = require('react-native').Dimensions.get('window');
+
+function AnimatedPostCard({ scrollY, ...props }: { index: number; scrollY: ReAnimated.SharedValue<number>; post: any; onCommentPress: (id: string) => void; onForwardPress: (id: string) => void }) {
+  const cardTop = useSharedValue(0);
+
+  const animStyle = useAnimatedStyle(() => {
+    const distanceFromBottom = cardTop.value - scrollY.value - SCREEN_HEIGHT;
+    const progress = interpolate(
+      distanceFromBottom,
+      [80, -60],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: progress,
+      transform: [
+        { translateY: interpolate(progress, [0, 1], [40, 0], Extrapolation.CLAMP) },
+        { scale: interpolate(progress, [0, 1], [0.96, 1], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  return (
+    <ReAnimated.View
+      style={animStyle}
+      onLayout={(e) => { cardTop.value = e.nativeEvent.layout.y; }}
+    >
+      <PostCard {...props} />
+    </ReAnimated.View>
+  );
+}
 
 export default function HomeFeed() {
   const { colors, spacing, typography, isDark } = useTheme();
@@ -83,8 +117,10 @@ export default function HomeFeed() {
     setForwardSheetVisible(true);
   }, []);
 
-  const renderPostItem = useCallback(({ item }: { item: any }) => (
-    <PostCard post={item} onCommentPress={handleCommentPress} onForwardPress={handleForwardPress} />
+  const reanimatedScrollY = useSharedValue(0);
+
+  const renderPostItem = useCallback(({ item, index }: { item: any; index: number }) => (
+    <AnimatedPostCard index={index} scrollY={reanimatedScrollY} post={item} onCommentPress={handleCommentPress} onForwardPress={handleForwardPress} />
   ), [handleCommentPress, handleForwardPress]);
 
   const joinedCommunities = useMemo(() => communities.filter((c) => c.isJoined), [communities]);
@@ -278,14 +314,16 @@ export default function HomeFeed() {
   const FeedHeader = (
     <View>
       {renderStoriesRow()}
-      {renderWelcomeBanner()}
-      {renderQuickActions()}
-      {renderUpcomingEvents()}
-      <View style={styles.feedDivider}>
-        <Text style={[styles.feedTitle, { color: colors.text }]}>Community Feed</Text>
-        <TouchableOpacity>
-          <Ionicons name="options-outline" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+      <View style={styles.feedHeaderContent}>
+        {renderWelcomeBanner()}
+        {renderQuickActions()}
+        {renderUpcomingEvents()}
+        <View style={styles.feedDivider}>
+          <Text style={[styles.feedTitle, { color: colors.text }]}>Community Feed</Text>
+          <TouchableOpacity>
+            <Ionicons name="options-outline" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -347,7 +385,10 @@ export default function HomeFeed() {
           }
           contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
-          onScroll={(e: any) => scrollY.setValue(e.nativeEvent.contentOffset.y)}
+          onScroll={(e: any) => {
+            scrollY.setValue(e.nativeEvent.contentOffset.y);
+            reanimatedScrollY.value = e.nativeEvent.contentOffset.y;
+          }}
           scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
@@ -445,6 +486,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   storiesScroll: { paddingHorizontal: 16, paddingVertical: 12, gap: 14 },
+  feedHeaderContent: { paddingHorizontal: 16 },
   storyItem: { alignItems: 'center', width: 62 },
   storyRing: {
     width: 58, height: 58, borderRadius: 29,
