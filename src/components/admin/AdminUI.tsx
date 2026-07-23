@@ -95,12 +95,8 @@ export const T = StyleSheet.create({
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 interface StatCardProps { label: string; value: number | string; icon: FeatherIconName; color?: string; }
 export function StatCard({ label, value, icon, color = C.accent }: StatCardProps) {
-  const { width: w } = useWindowDimensions();
-  const cols = w < 480 ? 2 : w < 768 ? 3 : 5;
-  const gap = 10;
-  const cardW = (w - 28 - gap * (cols - 1)) / cols;
   return (
-    <View style={[sc.card, { width: cardW }]}>
+    <View style={[sc.card]}>
       <View style={[sc.iconWrap, { backgroundColor: color + '18' }]}>
         <Feather name={icon} size={20} color={color} />
       </View>
@@ -116,8 +112,9 @@ export function StatCard({ label, value, icon, color = C.accent }: StatCardProps
 }
 const sc = StyleSheet.create({
   card: {
+    flex: 1,
     backgroundColor: C.white, borderRadius: 12,
-    padding: 14, margin: 5,
+    padding: 14,
     flexDirection: 'row', alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1, borderColor: C.border,

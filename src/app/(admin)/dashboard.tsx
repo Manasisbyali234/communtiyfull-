@@ -68,9 +68,15 @@ export default function AdminDashboard() {
       {loading ? <LoadingOverlay /> : (
         <>
           <View style={s.statsGrid}>
-            {STAT_CONFIG.map((cfg) => (
-              <StatCard key={cfg.key} label={cfg.label} value={stats[cfg.key] ?? 0} icon={cfg.icon} color={cfg.color} />
-            ))}
+            {[0, 2, 4, 6, 8].map((start) =>
+              STAT_CONFIG.slice(start, start + 2).length > 0 ? (
+                <View key={start} style={s.statsRow}>
+                  {STAT_CONFIG.slice(start, start + 2).map((cfg) => (
+                    <StatCard key={cfg.key} label={cfg.label} value={stats[cfg.key] ?? 0} icon={cfg.icon} color={cfg.color} />
+                  ))}
+                </View>
+              ) : null
+            )}
           </View>
 
           <SectionCard>
@@ -141,7 +147,8 @@ export default function AdminDashboard() {
 }
 
 const s = StyleSheet.create({
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16, marginHorizontal: -5 },
+  statsGrid: { marginBottom: 16, gap: 10 },
+  statsRow: { flexDirection: 'row', gap: 10 },
 
   mobileCard: {
     paddingHorizontal: 14, paddingVertical: 12,
