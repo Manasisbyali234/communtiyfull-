@@ -402,7 +402,7 @@ const s = StyleSheet.create({
   topBarSafe: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   topBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 14,
+    backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14,
   },
   menuBtn: { padding: 6, borderRadius: 8 },
   pageTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, letterSpacing: -0.2 },
@@ -431,5 +431,5 @@ const s = StyleSheet.create({
   bellFooterText: { fontSize: 13, color: '#16A34A', fontWeight: '600' },
 
   content: { flex: 1 },
-  contentInner: { padding: 14, paddingBottom: 40 },
+  contentInner: { padding: 16, paddingBottom: 40 },
 });

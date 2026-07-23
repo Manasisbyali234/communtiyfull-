@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: WA.headerBg, paddingHorizontal: 8, paddingVertical: 8,
+    backgroundColor: WA.headerBg, paddingHorizontal: 16, paddingVertical: 8,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 4, elevation: 4,
   },
   backBtn: { padding: 4 },
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E0E0E0', marginHorizontal: 18 },
 
   messageList: { flex: 1, backgroundColor: WA.bg },
-  listContent: { paddingHorizontal: 8, paddingTop: 10 },
+  listContent: { paddingHorizontal: 16, paddingTop: 10 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   dateSeparatorRow: { alignItems: 'center', marginVertical: 10 },

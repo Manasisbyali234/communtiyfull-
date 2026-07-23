@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   // ── App Bar ─────────────────────────────────────────────────────────────────
   navbar: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 8, height: 56,
+    paddingHorizontal: 16, height: 56,
     borderBottomWidth: StyleSheet.hairlineWidth,
     zIndex: 10,
   },

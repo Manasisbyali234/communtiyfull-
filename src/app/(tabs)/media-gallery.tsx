@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 8, height: 56, borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16, height: 56, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: { padding: 8 },
   title: { fontSize: 17, fontWeight: '700' },

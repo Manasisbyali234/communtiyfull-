@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   navbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     height: 56,
     borderBottomWidth: StyleSheet.hairlineWidth,
     zIndex: 10,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
 
   // ── Premium Profile Card ────────────────────────────────────────────────────
   profileCard: {
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginTop: -50,
     borderRadius: 20,
     paddingBottom: 16,
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
 
   // ── Tab Bar ─────────────────────────────────────────────────────────────────
   tabBarWrapper: {
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginBottom: 10,
   },
   tabScroll: { paddingVertical: 4, gap: 6 },

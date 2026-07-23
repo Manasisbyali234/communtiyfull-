@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 10 : 20,
     left: 0, right: 0,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     zIndex: 10,
   },
   progressBarContainer: { flexDirection: 'row', gap: 4, marginBottom: 12 },
