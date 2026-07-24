@@ -1,17 +1,11 @@
-import { Platform, Share } from 'react-native';
+import { Share } from 'react-native';
 import { apiClient } from '../api/client';
 
-const APP_STORE_URL = 'https://apps.apple.com/app/id<YOUR_APP_ID>';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mmdevteam.communityapp';
-const WEB_APP_URL = 'https://community-api.metromindz.com';
-const APK_DOWNLOAD_URL = 'https://drive.google.com/your-apk-link-here'; // 👈 replace with your Drive/EAS link
+const DOWNLOAD_PAGE_URL = 'https://community-api.metromindz.com/download';
 
 export function getAppDownloadLink(referrerId?: string): string {
-  // Until published on stores, always use the direct APK download link
-  const base = APK_DOWNLOAD_URL || (Platform.OS === 'ios' ? APP_STORE_URL
-    : Platform.OS === 'android' ? PLAY_STORE_URL
-    : WEB_APP_URL);
-  return referrerId ? `${base}${base.includes('?') ? '&' : '?'}ref=${referrerId}` : base;
+  const base = DOWNLOAD_PAGE_URL;
+  return referrerId ? `${base}?ref=${referrerId}` : base;
 }
 
 export async function trackShare(sharerId: string, sharedWith?: string, sharedEmail?: string) {
@@ -22,7 +16,7 @@ export async function trackShare(sharerId: string, sharedWith?: string, sharedEm
 
 export async function shareAppLink(displayName: string, referrerId?: string): Promise<boolean> {
   const link = getAppDownloadLink(referrerId);
-  const message = `Hey! ${displayName} has invited you to join the GowdaCommunity app. Connect with family and community members, stay updated on events, and more!\n\nDownload here: ${link}`;
+  const message = `Hey! ${displayName} has invited you to join the GowdaCommunity app. Connect with family and community members, stay updated on events, and more!\n\nGet the app: ${link}`;
 
   if (Platform.OS !== 'web') {
     try {
